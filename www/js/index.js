@@ -24,7 +24,7 @@ async function getMedia() {
 
 async function createLocalPeerConnection(configuration) {
     const pc = new RTCPeerConnection(configuration);
-    const stream = getLocalVideo().srcObject;
+    const stream = getLocalVideo().captureStream();
 
     pc.addEventListener('connectionstatechange', event => {
 	console.log("local pc : " + pc.connectionState);
@@ -68,10 +68,10 @@ async function createRemotePeerConnection(configuration, offer) {
 }
 
 async function start() {
-    const stream = await getMedia();
+    // const stream = await getMedia();
     let local = getLocalVideo();
-    local.srcObject = stream;
-    local.onloadedmetadata = _ => local.play();
+    // local.srcObject = stream;
+    local.play();
 
     let remote = getRemoteVideo();
     // remote.play();
@@ -79,7 +79,7 @@ async function start() {
     const relayConfiguration = {
 	'iceServers': [
 	    {
-		urls:'turn:turn.dabaldassi.fr:3478',
+		urls:'turn:turn.dabaldassi.fr:3479',
 		username: 'test',
 		credential: 'test123'
 	    }
