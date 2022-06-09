@@ -32,6 +32,7 @@ for (var i=0;i<targets.length;++i)
 	gauges[i].animationSpeed = 10000; // set animation speed (32 is default value)
 	gauges[i].set(0); // set actual value
 }
+
 gauges[0].maxValue = 1280; 
 gauges[1].maxValue = 720; 
 gauges[2].maxValue = 30; 
@@ -44,8 +45,8 @@ async function getMedia() {
 
     try {
 	stream = await navigator.mediaDevices.getUserMedia({
-		audio : true,
-		video : { width: 640, height: 480 }
+	    audio : true,
+	    video : { width: 640, height: 480 }
 	});	
     } catch(err) {
 	console.err(err);
@@ -184,8 +185,8 @@ async function start_peerconnection(port) {
 	]
     };
     
-    local_pc    = await createLocalPeerConnection(relayConfiguration);
-    remote_pc   = await createRemotePeerConnection(configuration, local_pc.offer);
+    local_pc  = await createLocalPeerConnection(relayConfiguration);
+    remote_pc = await createRemotePeerConnection(configuration, local_pc.offer);
     await local_pc.pc.setRemoteDescription(remote_pc.answer);
 
     local_pc.pc.addEventListener('icecandidate', event => {
@@ -219,12 +220,14 @@ function stop_peerconnection() {
 
 (function() {
     let ws = new WebSocket("ws://dabaldassi.fr:3333");
+    // let ws = new WebSocket("ws://localhost:3333");
     let sessionId = 0;
 
     ws.onopen = () => {	console.log("websocket is opened"); };
     ws.onerror = () => { console.log("error with websocket"); };
     ws.onmessage = msg => {
 	let response = JSON.parse(msg.data);
+	console.log(response);
 
 	if(response.type === "error") {
 	    console.error("Error from server :" + response.data.message);
@@ -247,14 +250,31 @@ function stop_peerconnection() {
 	if(callButton.innerHTML === "Start") {
 	    callButton.innerHTML = "Stop";
 
+	    let cc_radio = document.getElementsByName("cc");
+	    let cc;
+
+	    cc_radio.forEach(function(e) {
+		if(e.checked) cc = e.value;
+	    });
+
+	    let dgram_radio = document.getElementsByName("datagrams");
+	    let dgram;
+	    
+	    dgram_radio.forEach(function(e) {
+		if(e.checked) dgram = e;
+	    });
+	    
 	    let request = {
 		cmd: "startclient",
 		transId: 0,
 		data: {
-		    datagrams: true
+		    datagrams: dgram.value === "datagram",
+		    cc: cc
 		}
 	    };
 
+	    console.log(request);
+	    
 	    ws.send(JSON.stringify(request));
 	} else {
 	    callButton.innerHTML = "Start";

@@ -8,6 +8,9 @@
       html {
 	  zoom: 90%;
       }
+      .p5{
+	  padding: 5px;
+      }
       body {
 	  background: #e2e1e0;
 	  text-align: center;
@@ -58,6 +61,21 @@
 	  font-size: 24px;
 	  top: 5px;
 	  margin-bottom: 10px;
+      }
+
+      .container-radio {
+	  width: 50%;
+	  float: left;
+	  position: relative;
+	  font-size: 24px;
+	  top: 5px;
+	  margin-bottom: 10px;
+      }
+      .container-radio div{
+	  min-width: 200px;
+	  display: flex;
+	  align-content: flex-start;
+	  margin-left: 5px;
       }
 
       .gaugeChartContainer {
@@ -160,6 +178,16 @@
 	  font-size: 12pt;
 	  
       }
+
+      label
+      {
+	  font: 1rem 'Fira Sans', sans-serif;
+      }
+
+      input
+      {
+	  margin: .4rem;
+      }
     </style>
     
   </head>
@@ -170,10 +198,61 @@
 	<video id="local" loop><source src="1293kbs.mp4" type="video/mp4"></video>
 	<button type="button" id="call">Start</button>
       </div>
+      
       <div class="container-video">REMOTE
 	<video id="remote"></video>
       </div>
 
+      <div class="container-video"></div>
+      
+      <div class="container-radio">
+	<fieldset>
+	  <legend>Select a Congestion controller:</legend>
+
+	  <div>
+	    <input type="radio" id="bbr" name="cc" value="bbr"
+		   checked>
+	    <label for="bbr">BBR</label>
+	  </div>
+
+	  <div>
+	    <input type="radio" id="copa" name="cc" value="copa">
+	    <label for="copa">COPA</label>
+	  </div>
+
+	  <div>
+	    <input type="radio" id="newreno" name="cc" value="newreno">
+	    <label for="newreno">NewReno</label>
+	  </div>
+
+	  <div>
+	    <input type="radio" id="cubic" name="cc" value="cubic">
+	    <label for="cubic">Cubic</label>
+	  </div>
+	</fieldset>
+      </div>
+
+      <div class="container-radio">
+	<fieldset>
+	  <legend>Datagrams or stream :</legend>
+
+	  <div>
+	    <input type="radio" id="datagram" name="datagrams" value="datagram"
+		   checked>
+	    <label for="bbr">datagram</label>
+	  </div>
+
+	  <div>
+	    <input type="radio" id="stream" name="datagrams" value="stream">
+	    <label for="stream">stream</label>
+	  </div>
+	</fieldset>
+      </div>
+
+      <div class="container-video"></div>
+      <div class="container-video"></div>
+      <div class="container-video"></div>
+      
       <div class="gaugeChartContainer">
 	<canvas id="r_s_w" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
 	<span id="s_s_w" class="gaugeChartLabel">- -</span>
@@ -181,6 +260,7 @@
 	<span class="gaugeChartMin">0</span>
 	<span class="gaugeChartMax">640</span>
       </div>
+      
       <div class="gaugeChartContainer">
 	<canvas id="r_s_h" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
 	<span id="s_s_h" class="gaugeChartLabel">- -</span>
@@ -188,6 +268,8 @@
 	<span class="gaugeChartMin">0</span>
 	<span class="gaugeChartMax">480</span>
       </div>
+
+      
       <div class="gaugeChartContainer">
 	<canvas id="r_s_f" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
 	<span id="s_s_f" class="gaugeChartLabel">- -</span>
@@ -195,6 +277,7 @@
 	<span class="gaugeChartMin">0</span>
 	<span class="gaugeChartMax">30</span>
       </div>
+      
       <div class="gaugeChartContainer">
 	<canvas id="r_s_b" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
 	<span id="s_s_b" class="gaugeChartLabel">- -</span>
@@ -202,6 +285,7 @@
 	<span class="gaugeChartMin">0</span>
 	<span class="gaugeChartMax">1024</span>
       </div>
+      
     </div>
   </body>
 
