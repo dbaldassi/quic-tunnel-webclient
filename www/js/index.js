@@ -244,6 +244,9 @@ function stop_peerconnection() {
     };
     
     let callButton = document.querySelector('button');
+    let linkButton = document.getElementById('link');
+    let resetLinkButton = document.getElementById('resetlink');
+    
     callButton.onclick = function(e) {
 	console.log("click");
 	console.log(callButton.innerHTML);
@@ -290,5 +293,37 @@ function stop_peerconnection() {
 
 	    ws.send(JSON.stringify(request));	    
 	}
+    };
+
+    linkButton.onclick = function(_) {
+	let bitrate = document.getElementById('bitrate');
+	let delay = document.getElementById('delay');
+	
+	let linkObject = {
+	    cmd: "link",
+	    transId: 2,
+	    data: {
+		bitrate: parseInt(bitrate.value, 10),
+		delay: parseInt(delay.value, 10)
+	    }
+	};
+
+	ws.send(JSON.stringify(linkObject));
+    };
+    
+    resetLinkButton.onclick = function(_) {
+	let linkObject = {
+	    cmd: "link",
+	    transId: 2,
+	    data: {}
+	};
+	
+	ws.send(JSON.stringify(linkObject));
+
+	let bitrate = document.getElementById('bitrate');
+	let delay = document.getElementById('delay');
+
+	bitrate.value = "";
+	delay.value = "";
     };
 })();
