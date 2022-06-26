@@ -4,7 +4,7 @@ const Express         = require('express');
 const CORS            = require('cors');
 const WebsocketServer = require('websocket').server;
 
-const PORT = 8888;
+const PORT = 9999;
 
 const options = {
     key: fs.readFileSync('key.pem'),
