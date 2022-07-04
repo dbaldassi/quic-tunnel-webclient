@@ -4,6 +4,8 @@ const START_REQUEST = 0;
 const STOP_REQUEST = 1;
 const LINK_REQUEST = 2;
 const OUT_REQUEST = 3;
+const START_SERVER_REQUEST = 4;
+const STOP_SERVER_REQUEST = 5;
 
 // time
 const SEC = 1000;
@@ -247,10 +249,7 @@ function reset_link(ws) {
 
 let medooze = false;
 
-function start(ws) {
-    let callButton = document.querySelector('button');
-    callButton.innerHTML = "Stop";
-
+function send_start_client(ws) {
     let cc_radio = document.getElementsByName("cc");
     let cc;
 
@@ -262,21 +261,58 @@ function start(ws) {
     let dgram;
     dgram_radio.forEach(e => dgram = e.checked && e.value === "datagram");
 
-    let relay_radio = document.getElementsByName("relay");
-    relay_radio.forEach(e => medooze = e.checked && e.value === "medooze");
-    
     let request = {
 	cmd: "startclient",
 	transId: START_REQUEST,
 	data: {
 	    datagrams: dgram,
+	    cc: cc,
+	    quic_port: 8888,
+	    quic_host: "192.168.1.47"
+	}
+    };
+
+    ws.send(JSON.stringify(request));
+}
+
+function send_start_server(ws) {
+    let dgram_radio = document.getElementsByName("datagrams");
+    let dgram;
+    dgram_radio.forEach(e => dgram = e.checked && e.value === "datagram");
+
+    let cc_radio = document.getElementsByName("cc");
+    let cc;
+
+    cc_radio.forEach(function(e) {
+	if(e.checked) cc = e.value;
+    });
+
+    let server_request = {
+	cmd: "startserver",
+	transId: START_SERVER_REQUEST,
+	data: {
+	    datagrams: dgram,
+	    port_out: 10096,
+	    addr_out: "192.168.1.33",
+	    quic_port: 8888,
+	    quic_host: "192.168.1.47",
 	    cc: cc
 	}
     };
 
-    // console.log(request);
+    ws.send(JSON.stringify(server_request));
+}
 
-    ws.send(JSON.stringify(request));
+function start(in_ws, out_ws) {
+    let callButton = document.querySelector('button');
+    callButton.innerHTML = "Stop";
+
+    let relay_radio = document.getElementsByName("relay");
+    relay_radio.forEach(e => medooze = e.checked && e.value === "medooze");
+
+    if(medooze) send_start_server(out_ws);
+    else send_start_client(in_ws);
+
     // start_peerconnection_medooze(3479);
     // start_peerconnection(3479);
 }
@@ -299,11 +335,8 @@ function stop(ws) {
     display_chart();
 }
 
-(function() {
-    let ws = new WebSocket("ws://dabaldassi.fr:3333");
-    // let ws = new WebSocket("ws://localhost:3333");
-
-    ws.onopen = () => {	console.log("websocket is opened"); };
+function setup_ws(ws) {
+    ws.onopen = () => {	console.log("in websocket is opened"); };
     ws.onerror = () => { console.log("error with websocket"); };
     ws.onmessage = msg => {
 	let response = JSON.parse(msg.data);
@@ -317,15 +350,36 @@ function stop(ws) {
 		sessionId = response.data.id;
 
 		if(medooze) start_peerconnection_medooze(response.data.port);
-		else start_peerconnection(response.data.port);
-		
-		set_link_interval(ws, 0);
+		else {
+		    start_peerconnection(response.data.port);
+		    set_link_interval(ws, 0);
+		}		
 	    }
 	    else if(response.transId === STOP_REQUEST) {
 		window.open(response.data.url, '_blank').focus();
 	    }
+	    else if(response.transId === START_SERVER_REQUEST) {
+		if(medooze) {
+		    send_start_client(ws.in_ws);
+		    set_link_interval(ws, 0);		   
+		}
+	    }
 	}
     };
+}
+
+(function() {
+    // let ws = new WebSocket("ws://dabaldassi.fr:3333");
+    // let ws = new WebSocket("ws://localhost:3333");
+
+    let in_ws = new WebSocket("ws://localhost:3333");
+    let out_ws = new WebSocket("ws://lin-kanda.local:3334");
+    // let out_ws = new WebSocket("ws://localhost:3334");
+
+    out_ws.in_ws = in_ws;
+    
+    setup_ws(in_ws);
+    setup_ws(out_ws);
     
     let callButton = document.querySelector('button');
     let linkButton = document.getElementById('link');
@@ -333,8 +387,8 @@ function stop(ws) {
     
     callButton.onclick = function(e) {
 	console.log("click");
-	if(callButton.innerHTML === "Start") start(ws);    
-	else stop(ws);
+	if(callButton.innerHTML === "Start") start(in_ws, out_ws);
+	else stop(in_ws, out_ws);
     };
 
     linkButton.onclick = function(_) {
@@ -350,8 +404,12 @@ function stop(ws) {
 	    }
 	};
 
-	ws.send(JSON.stringify(linkObject));
+	if(medooze) out_ws.send(JSON.stringify(linkObject));
+	else in_ws.send(JSON.stringify(linkObject));
     };
     
-    resetLinkButton.onclick = (_) => reset_link(ws);
+    resetLinkButton.onclick = (_) => {
+	if(medooze) reset_link(out_ws);
+	else reset_link(in_ws);
+    };
 })();
