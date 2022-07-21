@@ -165,7 +165,7 @@ function stop_peerconnection() {
     local.pause();
 }
 
-function start_peerconnection_medooze(port) {
+function start_peerconnection_medooze() {
     let ws = new WebSocket("wss://localhost:8084", "quic-relay-loopback");
 
     ws.onopen = async () => {
@@ -275,7 +275,7 @@ function send_start_client(ws) {
     ws.send(JSON.stringify(request));
 }
 
-function send_start_server(ws) {
+function send_start_server(ws, medooze_port) {
     let dgram_radio = document.getElementsByName("datagrams");
     let dgram;
     dgram_radio.forEach(e => dgram = e.checked && e.value === "datagram");
@@ -292,7 +292,7 @@ function send_start_server(ws) {
 	transId: START_SERVER_REQUEST,
 	data: {
 	    datagrams: dgram,
-	    port_out: 10096,
+	    port_out: medooze_port,
 	    addr_out: "192.168.1.33",
 	    quic_port: 8888,
 	    quic_host: "192.168.1.47",
@@ -310,7 +310,15 @@ function start(in_ws, out_ws) {
     let relay_radio = document.getElementsByName("relay");
     relay_radio.forEach(e => medooze = e.checked && e.value === "medooze");
 
-    if(medooze) send_start_server(out_ws);
+    if(medooze) {
+	let medooze_ws = new WebSocket("wss://localhost:8084", "port");
+	medooze_ws.onmessage = msg => {
+	    let response = JSON.parse(msg.data);
+	    let port = response.port;
+	    console.log(port);
+	    send_start_server(out_ws, port);
+	};
+    }
     else send_start_client(in_ws);
 
     // start_peerconnection_medooze(3479);
