@@ -18,6 +18,8 @@ let playing = true;
 let local_pc = null;
 
 let medooze_ws = null;
+let medooze_csv_url = null;
+const medooze_url = "localhost:8084";
 
 function getRemoteVideo() {
     return document.getElementById('remote');
@@ -31,7 +33,7 @@ function stop_peerconnection() {
 }
 
 function start_peerconnection_medooze() {
-    medooze_ws = new WebSocket("wss://localhost:8084", "quic-relay-loopback");
+    medooze_ws = new WebSocket("wss://" + medooze_url, "quic-relay-loopback");
 
     medooze_ws.onopen = async () => {
 	local_pc = new RTCPeerConnection();
@@ -84,6 +86,9 @@ function start_peerconnection_medooze() {
 		type:'answer',
 		sdp: ans.answer
 	    }));
+	}
+	if(ans.url) {
+	    medooze_csv_url = "https://" + medooze_url + ans.url;
 	}
     };
 }
@@ -164,7 +169,7 @@ function start(in_ws, out_ws) {
     let callButton = document.querySelector('button');
     callButton.innerHTML = "Stop";
 
-    let ws = new WebSocket("wss://localhost:8084", "port");
+    let ws = new WebSocket("wss://" + medooze_url, "port");
     ws.onmessage = msg => {
 	let response = JSON.parse(msg.data);
 	send_start_server(out_ws, response.port);
@@ -182,6 +187,11 @@ function stop(in_ws, out_ws) {
     if(medooze_ws) {
 	medooze_ws.close();
 	medooze_ws = null;
+    }
+    if(medooze_csv_url) {
+	const bweUrl = "https://medooze.github.io/bwe-stats-viewer/?url=" + encodeURIComponent(medooze_csv_url);
+	window.open(bweUrl, '_blank').focus();
+	medooze_csv_url = null;
     }
     
     stop_peerconnection();
@@ -221,7 +231,7 @@ function setup_ws(ws) {
 	    }
 	    else if(response.transId === STOP_REQUEST) {
 		// opening qvis visualiztion for client side
-		window.open(response.data.url, '_blank').focus();
+		// window.open(response.data.url, '_blank').focus();
 	    }
 	    else if(response.transId === START_SERVER_REQUEST) {
 		serverSessionId = response.data.id;

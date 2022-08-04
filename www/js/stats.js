@@ -3,7 +3,8 @@ let stats = [];
 let stats_send = [];
 
 // LINK
-const LINK_LIMIT = [[6, 1000, 1], [3, 500, 1], [3, 1000, 1]]; // [time to wait, link cap, delay]
+// const LINK_LIMIT = [[60, 1000, 1], [30, 500, 1], [30, 1000, 1]]; // [time to wait, link cap, delay]
+const LINK_LIMIT = [[2, 1000, 1], [2, 500, 1], [2, 1000, 1]]; // [time to wait, link cap, delay]
 
 let link_chart = [];
 
