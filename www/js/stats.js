@@ -3,7 +3,7 @@ let stats = [];
 let stats_send = [];
 
 // LINK
-const LINK_LIMIT = [[60, 1000, 1], [30, 500, 1], [30, 1000, 1]]; // [time to wait, link cap, delay]
+const LINK_LIMIT = [[6, 1000, 1], [3, 500, 1], [3, 1000, 1]]; // [time to wait, link cap, delay]
 
 let link_chart = [];
 
@@ -41,13 +41,14 @@ gauges[0].maxValue = 1280;
 gauges[1].maxValue = 720; 
 gauges[2].maxValue = 30; 
 gauges[3].maxValue = 1024; 
-gauges[4].maxValue = 1024; 
+
+if(gauges[4]) gauges[4].maxValue = 1024;
 
 var texts =  document.querySelectorAll('.gaugeChartLabel');
 
 async function get_remote_stats(pc, track, count) {
     var results;
-    // let remote = getRemoteVideo();
+    let remote = getRemoteVideo();
 
     try {
 	//For ff
@@ -67,8 +68,8 @@ async function get_remote_stats(pc, track, count) {
 	    prev = result.timestamp;
 
 	    //Get values
-	    var width = track.width; // || remote.videoWidth;//result.stat("googFrameWidthReceived");
-	    var height = track.height; // || remote.videoHeight;//result.stat("googFrameHeightReceived");
+	    var width = track.width || remote.videoWidth;//result.stat("googFrameWidthReceived");
+	    var height = track.height || remote.videoHeight;//result.stat("googFrameHeightReceived");
 	    var fps =  (result.framesDecoded-prevFrames)*1000/delta;
 	    var kbps = (result.bytesReceived-prevBytes)*8/delta;
 	    //Store last values
@@ -149,12 +150,15 @@ function display_chart() {
 	      
 	      chart.render();
 	  });
+
+    for(let i = 0; i < stats.length; ++i) {
+	console.log(stats[i].x + "," + stats[i].y + "," + link_chart[i].y);
+    }
 }
 
-function set_link_interval(ws, current) {
+function set_link_interval(ws, current, onfinish) {
     if(current >= LINK_LIMIT.length) {
-	reset_link(ws);
-	stop(ws);
+	onfinish();
     } else {
 	current_link = current;
 	let link = LINK_LIMIT[current];
@@ -176,6 +180,6 @@ function set_link_interval(ws, current) {
 	    ws.send(JSON.stringify(linkObject));
 	}
 
-	setTimeout(set_link_interval, time * SEC, ws, current + 1);
+	setTimeout(set_link_interval, time * SEC, ws, current + 1, onfinish);
     }
 }
