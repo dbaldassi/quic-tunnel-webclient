@@ -119,7 +119,7 @@ function send_start_client(ws) {
 	if(e.checked) cc = e.value;
     });
     
-    let dgram_radio = document.getElementsByName("datagrams");
+    let dgram_radio = document.getElementsByName("datagram");
     let dgram;
     dgram_radio.forEach(e => dgram = e.checked && e.value === "datagram");
 
@@ -130,15 +130,18 @@ function send_start_client(ws) {
 	    datagrams: dgram,
 	    cc: cc,
 	    quic_port: 8888,
-	    quic_host: "192.168.1.47"
+	    quic_host: "192.168.1.47",
+	    external_file_transfer: true
 	}
     };
 
+    console.log(request);
+    
     ws.send(JSON.stringify(request));
 }
 
 function send_start_server(ws, medooze_port) {
-    let dgram_radio = document.getElementsByName("datagrams");
+    let dgram_radio = document.getElementsByName("datagram");
     let dgram;
     dgram_radio.forEach(e => dgram = e.checked && e.value === "datagram");
 
@@ -181,6 +184,7 @@ function start(in_ws, out_ws) {
 function stop(in_ws, out_ws) {
     console.log("stoppping");
     let callButton = document.querySelector('button');
+    if(callButton.innerHTML === "Start") return; // Already stopped
     
     callButton.innerHTML = "Start";
 
