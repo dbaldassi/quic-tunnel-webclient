@@ -293,6 +293,25 @@
 	</fieldset>
       </div>
 
+      <div class="container-radio">
+	<fieldset>
+	  <legend>Concurrent file transfer :</legend>
+	  <div>
+	    <input type="radio" id="nofiletransfer" name="filetransfer" value="None"
+		   checked>
+	    <label for="None">None</label>
+	  </div>
+	  <div>
+	    <input type="radio" id="externalfiletrasnfer" name="filetransfer" value="external">
+	    <label for="external">external</label>
+	  </div>
+	  <div>
+	    <input type="radio" id="multiplexedfiletrasnfer" name="filetransfer" value="multiplexed">
+	    <label for="multiplexed">multiplexed</label>
+	  </div>
+	</fieldset>
+      </div>
+      
       <div class="gaugeChartContainer">
 	<canvas id="r_s_w" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
 	<span id="s_s_w" class="gaugeChartLabel">- -</span>

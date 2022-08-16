@@ -285,7 +285,7 @@
 	  <div>
 	    <input type="radio" id="datagram" name="datagrams" value="datagram"
 		   checked>
-	    <label for="bbr">datagram</label>
+	    <label for="datagram">datagram</label>
 	  </div>
 
 	  <div>
@@ -294,7 +294,26 @@
 	  </div>
 	</fieldset>
       </div>
-
+      
+      <div class="container-radio">
+	<fieldset>
+	  <legend>Concurrent file transfer :</legend>
+	  <div>
+	    <input type="radio" id="nofiletransfer" name="filetransfer" value="None"
+		   checked>
+	    <label for="None">None</label>
+	  </div>
+	  <div>
+	    <input type="radio" id="externalfiletrasnfer" name="filetransfer" value="external">
+	    <label for="external">External</label>
+	  </div>
+	  <div>
+	    <input type="radio" id="multiplexedfiletrasnfer" name="filetransfer" value="multiplexed">
+	    <label for="multiplexed">Multiplexed</label>
+	  </div>
+	</fieldset>
+      </div>
+      
       <div class="container-video"></div>
       <div class="container-video"></div>
       <div class="container-video"></div>

@@ -120,9 +120,17 @@ function send_start_client(ws) {
     });
     
     let dgram_radio = document.getElementsByName("datagram");
-    let dgram;
-    dgram_radio.forEach(e => dgram = e.checked && e.value === "datagram");
+    let dgram = false;
+    dgram_radio.forEach(e => {
+	if(e.checked && e.value === "datagram") dgram = true;
+    });
 
+    let file_transfer_radio = document.getElementsByName("filetransfer");
+    let external = false;
+    file_transfer_radio.forEach(e => {
+	if(e.checked && e.value === "external") external = true;
+    });
+    
     let request = {
 	cmd: "startclient",
 	transId: START_REQUEST,
@@ -142,9 +150,11 @@ function send_start_client(ws) {
 
 function send_start_server(ws, medooze_port) {
     let dgram_radio = document.getElementsByName("datagram");
-    let dgram;
-    dgram_radio.forEach(e => dgram = e.checked && e.value === "datagram");
-
+    let dgram = false;
+    dgram_radio.forEach(e => {
+	if(e.checked && e.value === "datagram") dgram = true;
+    });
+    
     let cc_radio = document.getElementsByName("cc");
     let cc;
 
