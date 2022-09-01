@@ -129,6 +129,7 @@ function send_start_client(ws) {
     let external = false;
     file_transfer_radio.forEach(e => {
 	if(e.checked && e.value === "external") external = true;
+	console.log({checked: e.checked, val: e.value, external: external });
     });
     
     let request = {
@@ -139,7 +140,7 @@ function send_start_client(ws) {
 	    cc: cc,
 	    quic_port: 8888,
 	    quic_host: "192.168.1.47",
-	    external_file_transfer: true
+	    external_file_transfer: external
 	}
     };
 

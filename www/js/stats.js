@@ -174,7 +174,8 @@ function set_link_interval(ws, current, onfinish) {
 		transId: LINK_REQUEST,
 		data: {
 		    bitrate: bitrate,
-		    delay: delay
+		    delay: delay,
+		    loss: 100
 		}
 	    };
 
