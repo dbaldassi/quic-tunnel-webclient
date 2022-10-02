@@ -8,7 +8,7 @@ const START_SERVER_REQUEST = 4;
 const STOP_SERVER_REQUEST = 5;
 
 // time
-const SEC = 1000;
+const SEC = 33;
 const MIN = 60 * SEC;
 
 // Quic session id, returned when starting a quic endpoint
@@ -148,7 +148,7 @@ function send_start_client(ws) {
     });
 
     // check if we will use datagrams or streams
-    let dgram_radio = document.getElementsByName("datagram");
+    let dgram_radio = document.getElementsByName("datagrams");
     let dgram = false;
     dgram_radio.forEach(e => {
 	if(e.checked && e.value === "datagram") dgram = true;
@@ -169,7 +169,8 @@ function send_start_client(ws) {
 	    datagrams: dgram,
 	    cc: cc,
 	    quic_port: 8888,
-	    quic_host: "192.168.1.47",
+	    // quic_host: "192.168.1.47",
+	    quic_host: "192.168.1.33",
 	    external_file_transfer: external
 	}
     };
@@ -183,9 +184,10 @@ function send_start_client(ws) {
 // Send the start command to the server
 function send_start_server(ws, medooze_port) {
     //check if datagram or stream are requested
-    let dgram_radio = document.getElementsByName("datagram");
+    let dgram_radio = document.getElementsByName("datagrams");
     let dgram = false;
     dgram_radio.forEach(e => {
+	console.log(e.value);
 	if(e.checked && e.value === "datagram") dgram = true;
     });
 
@@ -206,10 +208,13 @@ function send_start_server(ws, medooze_port) {
 	    port_out: medooze_port,
 	    addr_out: "192.168.1.33",
 	    quic_port: 8888,
-	    quic_host: "192.168.1.47",
+	    quic_host: "192.168.1.33",
+	    // quic_host: "192.168.1.47",
 	    cc: cc
 	}
     };
+
+    console.log(server_request);
 
     // Send the command to the quic tunnel
     ws.send(JSON.stringify(server_request));
@@ -328,7 +333,8 @@ function setup_ws(ws) {
 (function() {
     // Create websocket to control the quic tunnel
     let in_ws = new WebSocket("ws://localhost:3333"); // quic client
-    let out_ws = new WebSocket("ws://lin-kanda.local:3334"); // quic server
+    // let out_ws = new WebSocket("ws://lin-kanda.local:3334"); // quic server
+    let out_ws = new WebSocket("ws://localhost:3334"); // quic server
 
     // Keep a reference of the client ws in the server ws
     out_ws.in_ws = in_ws; 
