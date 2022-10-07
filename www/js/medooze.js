@@ -235,11 +235,16 @@ function start(in_ws, out_ws) {
     ws.onclose = () => console.log("medooze websocket/port closed");    
 }
 
+function stop_ws(in_ws, out_ws) {
+    if(in_ws) in_ws.close();
+    if(out_ws) out_ws.close();
+}
+
 function stop(in_ws, out_ws) {
     console.log("stoppping");
 
     // update ui button
-    let callButton = document.querySelector('button');
+    let callButton = document.getElementById('call');
     if(callButton.innerHTML === "Start") return; // Already stopped
     
     callButton.innerHTML = "Start";
@@ -280,72 +285,103 @@ function stop(in_ws, out_ws) {
     out_ws.send(JSON.stringify(request));    
 }
 
-// setup quic tunnel websocket (client and server)
-function setup_ws(ws) {
-    ws.onopen = () => {	console.log("in websocket is opened"); };
-    ws.onerror = () => { console.log("error with websocket"); };
-    ws.onmessage = msg => {
-	// get json from raw message
-	let response = JSON.parse(msg.data);
-	console.log(response);
+function handle_ws_message(ws) {
+    // get json from raw message
+    let response = JSON.parse(msg.data);
+    console.log(response);
 
-	// an error occured in the tunnel
-	if(response.type === "error") {
-	    console.error("Error from server :" + response.data.message);
+    // an error occured in the tunnel
+    if(response.type === "error") {
+	console.error("Error from server :" + response.data.message);
+    }
+    else if(response.type === "response") { // Successful response from the server
+	// Response to a start client request
+	if(response.transId === START_REQUEST) {
+	    // keep the session id to later close the connection
+	    clientSessionId = response.data.id;
+	    // Start the peerconnection with the medooze media server
+	    start_peerconnection_medooze(response.data.port);
 	}
-	else if(response.type === "response") { // Successful response from the server
-	    // Response to a start client request
-	    if(response.transId === START_REQUEST) {
-		// keep the session id to later close the connection
-		clientSessionId = response.data.id;
-		// Start the peerconnection with the medooze media server
-		start_peerconnection_medooze(response.data.port);
-	    }
-	    // response to a stop client request with the qvis url
-	    else if(response.transId === STOP_REQUEST) {
-		// opening qvis visualiztion for client side
-		// window.open(response.data.url, '_blank').focus();
-	    }
-	    // response to a start server request
-	    else if(response.transId === START_SERVER_REQUEST) {
-		// keep the session id to later close the connection
-		serverSessionId = response.data.id;
-		// Start the quic tunnel client
-		send_start_client(ws.in_ws);
-		// Start a timeout for tc constraint
-		set_link_interval(ws, 0, () => {
-		    // lambda called when every link step is complete
-		    console.log("finito!");
-		    // remove all constraints
-		    reset_link(ws);
-		    // Stop the websocket connection to the tunnel
-		    stop(ws.in_ws, ws);
-		});
-	    }
-	    else if(response.transId === STOP_SERVER_REQUEST) {
-		// opening qvis visualization for server side
-		window.open(response.data.url, '_blank').focus();
-	    }
+	// response to a stop client request with the qvis url
+	else if(response.transId === STOP_REQUEST) {
+	    // opening qvis visualiztion for client side
+	    // window.open(response.data.url, '_blank').focus();
 	}
-    };
+	// response to a start server request
+	else if(response.transId === START_SERVER_REQUEST) {
+	    // keep the session id to later close the connection
+	    serverSessionId = response.data.id;
+	    // Start the quic tunnel client
+	    send_start_client(ws.in_ws);
+	    // Start a timeout for tc constraint
+	    set_link_interval(ws, 0, () => {
+		// lambda called when every link step is complete
+		console.log("finito!");
+		// remove all constraints
+		reset_link(ws);
+		// Stop the websocket connection to the tunnel
+		stop(ws.in_ws, ws);
+	    });
+	}
+	else if(response.transId === STOP_SERVER_REQUEST) {
+	    // opening qvis visualization for server side
+	    window.open(response.data.url, '_blank').focus();
+	}
+    }
+}
+
+function create_ws(addr) {
+    let ws = new WebSocket(addr);
+
+    return new Promise((resolve, reject) => {
+	ws.onopen = () => {
+	    console.log("Websocket is opened");
+	    resolve(ws);
+	};
+	ws.onerror = () => {
+	    reject("error with out websocket");
+	};
+	ws.onmessage = handle_ws_message;
+    });
+}
+
+async function create_websocket() {
+    let button = document.getElementById("connect");
+    button.innerHTML = "Connecting";
+    button.disabled = true;
+    
+    let in_addr = document.getElementById("qclient").value;
+    let out_addr = document.getElementById("qserver").value;
+    
+    let out_ws = await create_ws(out_addr).catch(err => console.log(err));
+    if(out_ws === undefined) {
+	button.innerHTML = "Connect";
+	button.disabled = false;
+	return [];
+    }
+    
+    let in_ws = await create_ws(in_addr).catch(err => console.log(err));
+    if(in_ws === undefined) {
+	out_ws.close();
+	button.innerHTML = "Connect";
+	button.disabled = false;
+	return [];
+    }
+
+    out_ws.in_ws = in_ws;
+    button.innerHTML = "Disconnect";
+    button.disabled = false;
+    
+    return [ in_ws, out_ws ];
 }
 
 (function() {
-    // Create websocket to control the quic tunnel
-    let in_ws = new WebSocket("ws://localhost:3333"); // quic client
-    // let out_ws = new WebSocket("ws://lin-kanda.local:3334"); // quic server
-    let out_ws = new WebSocket("ws://localhost:3334"); // quic server
-
-    // Keep a reference of the client ws in the server ws
-    out_ws.in_ws = in_ws; 
-
-    // setup both websocket
-    setup_ws(in_ws);
-    setup_ws(out_ws);
+    let in_ws = undefined, out_ws = undefined;
 
     // Setup the ui
     let callButton = document.querySelector('button');
     let linkButton = document.getElementById('link');
+    let connectButton = document.getElementById('connect');
     let resetLinkButton = document.getElementById('resetlink');
 
     // Start/stop the experiment when start button is clicked
@@ -353,6 +389,16 @@ function setup_ws(ws) {
 	console.log("click");
 	if(callButton.innerHTML === "Start") start(in_ws, out_ws);
 	else stop(in_ws, out_ws);
+    };
+    connectButton.onclick = async function(e) {
+	if(connectButton.innerHTML === "Connect") [ in_ws, out_ws ] = await create_websocket();
+	else {
+	    stop(in_ws, out_ws);
+	    stop_ws(in_ws, out_ws);
+	    in_ws = undefined;
+	    out_ws = undefined;
+	    connectButton.innerHTML = "Connect";
+	}
     };
 
     // Manually set the tc constraints

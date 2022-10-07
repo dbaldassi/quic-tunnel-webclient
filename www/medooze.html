@@ -77,6 +77,12 @@
 	  align-content: flex-start;
 	  margin-left: 5px;
       }
+      .container-radio button{
+	  display: flex;
+	  align-content: flex-start;
+	  float: left;
+	  margin-left: 5px;
+      }
 
       .gaugeChartContainer {
 	  position: relative;
@@ -216,135 +222,153 @@
     
   </head>
   <body>
-      <div class="container-video">
-	<video id="remote"></video>
-	<button type="button" id="call">Start</button>
-      </div>
-      
-      <div class="container-radio">
-	<fieldset>
-	  <legend>Select a Congestion controller:</legend>
+    <div class="container-radio">
+      <fieldset>
+	<legend>Websocket settings : </legend>
 
-	  <div>
-	    <input type="radio" id="bbr" name="cc" value="bbr"
-		   checked>
-	    <label for="bbr">BBR</label>
-	  </div>
+	<div>
+	  <label for="qclient">Quic client address: </label>
+	  <input type="text" id="qclient" name="qclient" value="ws://localhost:3333">
+	</div>
 
-	  <div>
-	    <input type="radio" id="copa" name="cc" value="copa">
-	    <label for="copa">COPA</label>
-	  </div>
+	<div>
+	  <label for="qserver">Quic server address: </label>
+	  <input type="text" id="qserver" name="qserver" value="ws://localhost:3334">
+	</div>
 
-	  <div>
-	    <input type="radio" id="newreno" name="cc" value="newreno">
-	    <label for="newreno">NewReno</label>
-	  </div>
-
-	  <div>
-	    <input type="radio" id="cubic" name="cc" value="cubic">
-	    <label for="cubic">Cubic</label>
-	  </div>
-
-	  <div>
-	    <input type="radio" id="none" name="cc" value="none">
-	    <label for="none">None</label>
-	  </div>
-	</fieldset>
-      </div>
-
-      <div class="container-radio">
-	<fieldset>
-	  <legend>Datagrams or stream :</legend>
-
-	  <div>
-	    <input type="radio" id="datagram" name="datagrams" value="datagram"
-		   checked>
-	    <label for="bbr">datagram</label>
-	  </div>
-
-	  <div>
-	    <input type="radio" id="stream" name="datagrams" value="stream">
-	    <label for="stream">stream</label>
-	  </div>
-	</fieldset>
-      </div>
-
-      <div class="container-video"></div>
-      <div class="container-video"></div>
-      <div class="container-video"></div>
-      
-      <div class="container-radio">
-	<fieldset>
-	  <legend>link settings : </legend>
-
-	  <div>
-	    <label for="bitrate">Bitrate: </label>
-	    <input type="text" id="bitrate" name="bitrate" value="">
-	  </div>
-
-	  <div>
-	    <label for="delay">Delay: </label>
-	    <input type="text" id="delay" name="delay" value="">
-	  </div>
-
-	  <button type="button" id="link">Set link</button>
-	  <button type="button" id="resetlink">Reset link</button>
-	</fieldset>
-      </div>
-
-      <div class="container-radio">
-	<fieldset>
-	  <legend>Concurrent file transfer :</legend>
-	  <div>
-	    <input type="radio" id="nofiletransfer" name="filetransfer" value="None"
-		   checked>
-	    <label for="None">None</label>
-	  </div>
-	  <div>
-	    <input type="radio" id="externalfiletrasnfer" name="filetransfer" value="external">
-	    <label for="external">external</label>
-	  </div>
-	  <div>
-	    <input type="radio" id="multiplexedfiletrasnfer" name="filetransfer" value="multiplexed">
-	    <label for="multiplexed">multiplexed</label>
-	  </div>
-	</fieldset>
-      </div>
-      
-      <div class="gaugeChartContainer">
-	<canvas id="r_s_w" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
-	<span id="s_s_w" class="gaugeChartLabel">- -</span>
-	<span class="gaugeChartTitle">Recv Width</span>
-	<span class="gaugeChartMin">0</span>
-	<span class="gaugeChartMax">640</span>
-      </div>
-      
-      <div class="gaugeChartContainer">
-	<canvas id="r_s_h" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
-	<span id="s_s_h" class="gaugeChartLabel">- -</span>
-	<span class="gaugeChartTitle">Recv Heigth</span>
-	<span class="gaugeChartMin">0</span>
-	<span class="gaugeChartMax">480</span>
-      </div>
-      
-      <div class="gaugeChartContainer">
-	<canvas id="r_s_f" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
-	<span id="s_s_f" class="gaugeChartLabel">- -</span>
-	<span class="gaugeChartTitle">Recv FPS</span>
-	<span class="gaugeChartMin">0</span>
-	<span class="gaugeChartMax">30</span>
-      </div>
-      
-      <div class="gaugeChartContainer">
-	<canvas id="r_s_b" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
-	<span id="s_s_b" class="gaugeChartLabel">- -</span>
-	<span class="gaugeChartTitle">Recv kbps</span>
-	<span class="gaugeChartMin">0</span>
-	<span class="gaugeChartMax">1024</span>
-      </div>
+	<button type="button" id="connect">Connect</button>
+      </fieldset>
     </div>
-  </body>
+    
+    <div class="container-video">
+      <button type="button" id="call">Start</button>
+      <video id="remote"></video>
+    </div>
+    
+    <div class="container-radio">
+      <fieldset>
+	<legend>Select a Congestion controller:</legend>
+
+	<div>
+	  <input type="radio" id="bbr" name="cc" value="bbr"
+		 checked>
+	  <label for="bbr">BBR</label>
+	</div>
+
+	<div>
+	  <input type="radio" id="copa" name="cc" value="copa">
+	  <label for="copa">COPA</label>
+	</div>
+
+	<div>
+	  <input type="radio" id="newreno" name="cc" value="newreno">
+	  <label for="newreno">NewReno</label>
+	</div>
+
+	<div>
+	  <input type="radio" id="cubic" name="cc" value="cubic">
+	  <label for="cubic">Cubic</label>
+	</div>
+
+	<div>
+	  <input type="radio" id="none" name="cc" value="none">
+	  <label for="none">None</label>
+	</div>
+      </fieldset>
+    </div>
+
+    <div class="container-radio">
+      <fieldset>
+	<legend>Datagrams or stream :</legend>
+
+	<div>
+	  <input type="radio" id="datagram" name="datagrams" value="datagram"
+		 checked>
+	  <label for="bbr">datagram</label>
+	</div>
+
+	<div>
+	  <input type="radio" id="stream" name="datagrams" value="stream">
+	  <label for="stream">stream</label>
+	</div>
+      </fieldset>
+    </div>
+
+    <div class="container-video"></div>
+    <div class="container-video"></div>
+    <div class="container-video"></div>
+    
+    <div class="container-radio">
+      <fieldset>
+	<legend>link settings : </legend>
+
+	<div>
+	  <label for="bitrate">Bitrate: </label>
+	  <input type="text" id="bitrate" name="bitrate" value="">
+	</div>
+
+	<div>
+	  <label for="delay">Delay: </label>
+	  <input type="text" id="delay" name="delay" value="">
+	</div>
+
+	<button type="button" id="link">Set link</button>
+	<button type="button" id="resetlink">Reset link</button>
+      </fieldset>
+    </div>
+
+    <div class="container-radio">
+      <fieldset>
+	<legend>Concurrent file transfer :</legend>
+	<div>
+	  <input type="radio" id="nofiletransfer" name="filetransfer" value="None"
+		 checked>
+	  <label for="None">None</label>
+	</div>
+	<div>
+	  <input type="radio" id="externalfiletrasnfer" name="filetransfer" value="external">
+	  <label for="external">external</label>
+	</div>
+	<div>
+	  <input type="radio" id="multiplexedfiletrasnfer" name="filetransfer" value="multiplexed">
+	  <label for="multiplexed">multiplexed</label>
+	</div>
+      </fieldset>
+    </div>
+    
+    <div class="gaugeChartContainer">
+      <canvas id="r_s_w" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
+      <span id="s_s_w" class="gaugeChartLabel">- -</span>
+      <span class="gaugeChartTitle">Recv Width</span>
+      <span class="gaugeChartMin">0</span>
+      <span class="gaugeChartMax">640</span>
+    </div>
+    
+    <div class="gaugeChartContainer">
+      <canvas id="r_s_h" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
+      <span id="s_s_h" class="gaugeChartLabel">- -</span>
+      <span class="gaugeChartTitle">Recv Heigth</span>
+      <span class="gaugeChartMin">0</span>
+      <span class="gaugeChartMax">480</span>
+    </div>
+    
+    <div class="gaugeChartContainer">
+      <canvas id="r_s_f" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
+      <span id="s_s_f" class="gaugeChartLabel">- -</span>
+      <span class="gaugeChartTitle">Recv FPS</span>
+      <span class="gaugeChartMin">0</span>
+      <span class="gaugeChartMax">30</span>
+    </div>
+    
+    <div class="gaugeChartContainer">
+      <canvas id="r_s_b" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
+      <span id="s_s_b" class="gaugeChartLabel">- -</span>
+      <span class="gaugeChartTitle">Recv kbps</span>
+      <span class="gaugeChartMin">0</span>
+      <span class="gaugeChartMax">1024</span>
+    </div>
+</div>
+</body>
 
 </html>	
 
