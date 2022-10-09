@@ -10,6 +10,7 @@ const STOP_SERVER_REQUEST = 5;
 // time
 const SEC = 33;
 const MIN = 60 * SEC;
+const EXP_COOKIES = 84; // 84 days
 
 // Quic session id, returned when starting a quic endpoint
 let clientSessionId = 0;
@@ -285,7 +286,7 @@ function stop(in_ws, out_ws) {
     out_ws.send(JSON.stringify(request));    
 }
 
-function handle_ws_message(ws) {
+function handle_ws_message(ws, msg) {
     // get json from raw message
     let response = JSON.parse(msg.data);
     console.log(response);
@@ -341,7 +342,7 @@ function create_ws(addr) {
 	ws.onerror = () => {
 	    reject("error with out websocket");
 	};
-	ws.onmessage = handle_ws_message;
+	ws.onmessage = msg => handle_ws_message(ws, msg);
     });
 }
 
@@ -352,6 +353,9 @@ async function create_websocket() {
     
     let in_addr = document.getElementById("qclient").value;
     let out_addr = document.getElementById("qserver").value;
+
+    set_cookie("in_addr", in_addr, EXP_COOKIES);
+    set_cookie("out_addr", out_addr, EXP_COOKIES);
     
     let out_ws = await create_ws(out_addr).catch(err => console.log(err));
     if(out_ws === undefined) {
@@ -375,7 +379,38 @@ async function create_websocket() {
     return [ in_ws, out_ws ];
 }
 
+function setup_radio_cookies(name) {
+    let cookie = get_cookie(name);
+    let radio = document.getElementsByName(name);
+    let found = false;
+    radio.forEach(e => {
+	if(!found) {
+	    found = cookie === e.value;
+	    e.checked = found;
+	} else {
+	    e.checked = false;
+	}
+	e.addEventListener('change', ev => {
+	    set_cookie(name, ev.target.value, EXP_COOKIES);
+	});
+    });
+    if(!found) radio[0].checked = true;
+}
+
+function setup_cookies() {
+    let in_addr = get_cookie("in_addr");
+    document.getElementById('qclient').value = in_addr;
+    let out_addr = get_cookie("out_addr");
+    document.getElementById('qserver').value = out_addr;
+
+    setup_radio_cookies("cc");
+    setup_radio_cookies("datagrams");
+    setup_radio_cookies("filetransfer");
+}
+
 (function() {
+    setup_cookies();
+    
     let in_ws = undefined, out_ws = undefined;
 
     // Setup the ui
@@ -390,12 +425,12 @@ async function create_websocket() {
 	if(callButton.innerHTML === "Start") start(in_ws, out_ws);
 	else stop(in_ws, out_ws);
     };
-    connectButton.onclick = async function(e) {
+    connectButton.onclick = async function(e) {	
 	if(connectButton.innerHTML === "Connect") [ in_ws, out_ws ] = await create_websocket();
 	else {
 	    stop(in_ws, out_ws);
 	    stop_ws(in_ws, out_ws);
-	    in_ws = undefined;
+	    in_ws  = undefined;
 	    out_ws = undefined;
 	    connectButton.innerHTML = "Connect";
 	}
