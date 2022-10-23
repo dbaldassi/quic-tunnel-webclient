@@ -6,9 +6,13 @@ const LINK_REQUEST = 2;
 const OUT_REQUEST = 3;
 const START_SERVER_REQUEST = 4;
 const STOP_SERVER_REQUEST = 5;
+const CAPABILITIES_IN_REQUEST = 6;
+const CAPABILITIES_OUT_REQUEST = 7;
+const UPLOAD_REQUEST = 8;
+const GETSTATS_REQUEST = 9;
 
 // time
-const SEC = 33;
+const SEC = 1000;
 const MIN = 60 * SEC;
 const EXP_COOKIES = 84; // 84 days
 
@@ -24,7 +28,8 @@ let medooze_ws = null;
 // medooze bwe stats viewer url to upload csv file after session
 let medooze_csv_url = null;
 // medooze media server port (RTP/RTCP)
-const medooze_url = "localhost:8084";
+let medooze_addr = null;
+let medooze_port = null;
 
 function getRemoteVideo() {
     // return the HTML video element to play the received stream
@@ -40,7 +45,11 @@ function stop_peerconnection() {
 
 function start_peerconnection_medooze() {
     // Create websocket with medooze with sub-protocol quic-relay-loopback
-    medooze_ws = new WebSocket("wss://" + medooze_url, "quic-relay-loopback");
+    let url = document.getElementById('medoozeaddr').value;
+    let port = document.getElementById('medoozeport').value;    
+    const medooze_url = "wss://" + url + ":" + port;
+
+    medooze_ws = new WebSocket(medooze_url, "quic-relay-loopback");
 
     medooze_ws.onopen = async () => {
 	// create RTC peerconnection
@@ -140,6 +149,14 @@ function reset_link(ws) {
 
 // Send the start command for the client endpoint of the tunnel
 function send_start_client(ws) {
+    // Get the implemntation
+    let impl_radio = document.getElementsByName("impl");
+    let impl;
+
+    impl_radio.forEach(function(e) {
+	if(e.checked) impl = e.value;
+    });
+    
     // Get the choosen congestion controller
     let cc_radio = document.getElementsByName("cc");
     let cc;
@@ -147,7 +164,7 @@ function send_start_client(ws) {
     cc_radio.forEach(function(e) {
 	if(e.checked) cc = e.value;
     });
-
+    
     // check if we will use datagrams or streams
     let dgram_radio = document.getElementsByName("datagrams");
     let dgram = false;
@@ -162,16 +179,19 @@ function send_start_client(ws) {
 	if(e.checked && e.value === "external") external = true;
     });
 
+    let host = document.getElementById('qhost').value;
+    let port = document.getElementById('qport').value;
+
     // build the JSON request
     let request = {
 	cmd: "startclient",
 	transId: START_REQUEST,
 	data: {
+	    impl: impl,
 	    datagrams: dgram,
 	    cc: cc,
-	    quic_port: 8888,
-	    // quic_host: "192.168.1.47",
-	    quic_host: "192.168.1.33",
+	    quic_port: Number(port),
+	    quic_host: host,
 	    external_file_transfer: external
 	}
     };
@@ -184,6 +204,14 @@ function send_start_client(ws) {
 
 // Send the start command to the server
 function send_start_server(ws, medooze_port) {
+    // Get the quic implementation
+    let impl_radio = document.getElementsByName("impl");
+    let impl;
+    
+    impl_radio.forEach(function(e) {
+	if(e.checked) impl = e.value;
+    });
+    
     //check if datagram or stream are requested
     let dgram_radio = document.getElementsByName("datagrams");
     let dgram = false;
@@ -200,34 +228,58 @@ function send_start_server(ws, medooze_port) {
 	if(e.checked) cc = e.value;
     });
 
+    // Check if we start a concurent file transfer
+    let file_transfer_radio = document.getElementsByName("filetransfer");
+    let external = false;
+    file_transfer_radio.forEach(e => {
+	if(e.checked && e.value === "external") external = true;
+    });
+
+    let out_url = document.getElementById('medoozeaddr').value;
+    let host = document.getElementById('qhost').value;
+    let port = document.getElementById('qport').value;
+    
     // build json request
     let server_request = {
 	cmd: "startserver",
 	transId: START_SERVER_REQUEST,
 	data: {
+	    impl: impl,
 	    datagrams: dgram,
 	    port_out: medooze_port,
-	    addr_out: "192.168.1.33",
-	    quic_port: 8888,
-	    quic_host: "192.168.1.33",
-	    // quic_host: "192.168.1.47",
-	    cc: cc
+	    addr_out: out_url,
+	    quic_port: parseInt(port),
+	    quic_host: host,
+	    cc: cc,
+	    external_file_transfer: external
 	}
     };
 
     console.log(server_request);
 
     // Send the command to the quic tunnel
-    ws.send(JSON.stringify(server_request));
+    ws.send(JSON.stringify(server_request));    
 }
 
 function start(in_ws, out_ws) {
     // update the ui button
-    let callButton = document.querySelector('button');
+    let callButton = document.getElementById('call');
     callButton.innerHTML = "Stop";
+    
+    let url = document.getElementById('medoozeaddr').value;
+    let port = document.getElementById('medoozeport').value;
+    let host = document.getElementById('qhost').value;
+    let qport = document.getElementById('qport').value;
+    
+    const medooze_url = "wss://" + url + ":" + port;
+
+    set_cookie("qhost", host, EXP_COOKIES);
+    set_cookie("qport", qport, EXP_COOKIES);
+    set_cookie("medoozeaddr", url, EXP_COOKIES);
+    set_cookie("medoozeport", port, EXP_COOKIES);
 
     // get which port medooze is listening to for RTP
-    let ws = new WebSocket("wss://" + medooze_url, "port");
+    let ws = new WebSocket(medooze_url, "port");
     ws.onmessage = msg => {
 	let response = JSON.parse(msg.data);
 	send_start_server(out_ws, response.port);
@@ -250,18 +302,10 @@ function stop(in_ws, out_ws) {
     
     callButton.innerHTML = "Start";
 
-    // if the ws is still active, close it
-    if(medooze_ws) {
-	medooze_ws.close();
-	medooze_ws = null;
-    }
-    // open the bwe stats viewer website with the csv dump file
-    if(medooze_csv_url) {
-	const bweUrl = "https://medooze.github.io/bwe-stats-viewer/?url=" + encodeURIComponent(medooze_csv_url);
-	window.open(bweUrl, '_blank').focus();
-	medooze_csv_url = null;
-    }
-
+    // remove stream
+    const stream = getRemoteVideo();
+    stream.srcObject = null;
+    
     // stop the peerconnection
     stop_peerconnection();
     
@@ -283,8 +327,97 @@ function stop(in_ws, out_ws) {
     request.data.id = serverSessionId;
 
     // Send stop command to the quic server
-    out_ws.send(JSON.stringify(request));    
+    out_ws.send(JSON.stringify(request));
+
+    // if the ws is still active, close it
+    if(medooze_ws) {
+	medooze_ws.close();
+	// medooze_ws = null;
+    }
+    // open the bwe stats viewer website with the csv dump file
+    if(medooze_csv_url) {
+	const bweUrl = "https://medooze.github.io/bwe-stats-viewer/?url=" + encodeURIComponent(medooze_csv_url);
+	window.open(bweUrl, '_blank').focus();
+	medooze_csv_url = null;
+    }
 }
+
+function create_radio_container(id, legend_name) {
+    let c_temp = document.getElementById(id);
+    if(c_temp) document.body.removeChild(c_temp);
+    
+    let container = document.createElement("div");
+    container.className = "container-radio";
+    container.id = id;
+    
+    let fieldset = document.createElement("fieldset");
+    let legend = document.createElement("legend");
+    legend.innerHTML = legend_name;
+
+    fieldset.appendChild(legend);
+    container.appendChild(fieldset);
+
+    return container;
+}
+
+function create_radio_div(parent, name, value) {
+    let div   = document.createElement("div");
+    let input = document.createElement("input");
+    let label = document.createElement("label");
+    
+    input.id    = value;
+    input.value = value;
+    input.name  = name;
+    input.type  = "radio";
+
+    label.for = value;
+    label.innerHTML = value;
+
+    div.appendChild(input);
+    div.appendChild(label);
+    parent.appendChild(div);
+}
+
+function show_impl_capabilities(caps) {
+    console.log(caps, caps.cc);
+    // Display Congestion control algo
+    let container_cc = create_radio_container("cc_container", "Select a Congestion controller:");
+    caps.cc.forEach(e => create_radio_div(container_cc.childNodes[0], "cc", e));
+    document.body.appendChild(container_cc);
+    
+    // Display datagram support
+    let container_dgram = create_radio_container("dgram_container", "Datagrams or stream :");
+    if(caps.datagrams) create_radio_div(container_dgram.childNodes[0], "datagrams", "datagram");
+    create_radio_div(container_dgram.childNodes[0], "datagrams", "stream");
+    document.body.appendChild(container_dgram);
+
+    setup_radio_cookies("cc");
+    setup_radio_cookies("datagrams");
+}
+
+function show_capabilities(caps) {
+    // Display implementations    
+    let container = create_radio_container("impl_container", "Quic implementation : ");
+    caps.forEach(e => create_radio_div(container.childNodes[0], "impl", e.impl));
+    document.body.appendChild(container);
+    setup_radio_cookies("impl");
+
+    let impl_radio = document.getElementsByName("impl");
+    impl_radio.forEach(e => {
+	e.addEventListener('change', ev => {
+	    let c = caps.find(elt => elt.impl === ev.target.value);
+	    show_impl_capabilities(c);
+	    set_cookie("impl", ev.target.value, EXP_COOKIES);
+	});
+
+	if(e.checked) {
+	    let c = caps.find(elt => elt.impl === e.value);
+	    show_impl_capabilities(c);
+	}
+    });    
+}
+
+let qvis_url = null;
 
 function handle_ws_message(ws, msg) {
     // get json from raw message
@@ -310,25 +443,123 @@ function handle_ws_message(ws, msg) {
 	}
 	// response to a start server request
 	else if(response.transId === START_SERVER_REQUEST) {
+	    qvis_url = null;
 	    // keep the session id to later close the connection
 	    serverSessionId = response.data.id;
 	    // Start the quic tunnel client
 	    send_start_client(ws.in_ws);
 	    // Start a timeout for tc constraint
-	    set_link_interval(ws, 0, () => {
+	    set_link_interval(ws, 0, (bitrate_stats, link_stats) => {
 		// lambda called when every link step is complete
 		console.log("finito!");
 		// remove all constraints
 		reset_link(ws);
-		// Stop the websocket connection to the tunnel
+		// Stop the peer connection and the tunnel quic endpoint
 		stop(ws.in_ws, ws);
+
+		// upload stats to quic tunnel server
+		const req = {
+		    cmd: "uploadstats",
+		    transId: UPLOAD_REQUEST,
+		    data: {
+			bitrate: bitrate_stats,
+			link: link_stats
+		    }
+		};
+		console.log(req);
+		
+		ws.send(JSON.stringify(req));
 	    });
 	}
 	else if(response.transId === STOP_SERVER_REQUEST) {
 	    // opening qvis visualization for server side
+	    qvis_url = response.data.url;
+	    window.open(qvis_url, '_blank').focus();
+	}
+	else if(response.transId === CAPABILITIES_IN_REQUEST) {
+	    show_capabilities(response.data.in_impls);
+	}
+	else if(response.transId === CAPABILITIES_OUT_REQUEST) {
+	    // console.log(response);
+	    // TODO: differentiate client and server caps in the UI
+	}
+	else if(response.transId === UPLOAD_REQUEST) {
+	    console.log("RECEIVE UPLOAD RESPONSE");
+
+	    // if(qvis_url) {
+	    // 	const qvis_tmp = qvis_url.split('"');
+	    // }
+
+	    // Get the quic implementation
+	    let impl_radio = document.getElementsByName("impl");
+	    let impl;
+	    
+	    impl_radio.forEach(function(e) {
+		if(e.checked) impl = e.value;
+	    });
+	    
+	    //check if datagram or stream are requested
+	    let dgram_radio = document.getElementsByName("datagrams");
+	    let dgram = false;
+	    dgram_radio.forEach(e => {
+		console.log(e.value);
+		if(e.checked && e.value === "datagram") dgram = true;
+	    });
+
+	    // get the choosen congestion controller
+	    let cc_radio = document.getElementsByName("cc");
+	    let cc;
+
+	    cc_radio.forEach(function(e) {
+		if(e.checked) cc = e.value;
+	    });
+
+	    let file_transfer_radio = document.getElementsByName("filetransfer");
+	    let external = false;
+	    file_transfer_radio.forEach(e => {
+		if(e.checked && e.value === "external") external = true;
+	    });
+
+	    let name = impl + "_" + cc;
+
+	    if(dgram) name += "_" + "dgram";
+	    else name += "_" + "stream";
+	    
+	    if(external) name += "_" + "scp";
+
+	    // 0% loss
+	    name += "_" + "0" + "_" + new Date().toJSON();
+	    
+	    const req = {
+		cmd: "getstats",
+		transId: GETSTATS_REQUEST,
+		data: {
+		    exp_name: name,
+		    // qvis_file: qvis_tmp[1]
+		}
+	    };
+
+	    console.log(req);
+	    ws.send(JSON.stringify(req));
+	}
+	else if(response.transId === GETSTATS_REQUEST) {
+	    console.log("GETSTATS RESP");
 	    window.open(response.data.url, '_blank').focus();
 	}
     }
+}
+
+function query_capabilities(ws, in_req) {
+    let req = {
+	cmd: 'capabilities',
+	transId: ((in_req) ? CAPABILITIES_IN_REQUEST : CAPABILITIES_OUT_REQUEST),
+	data: {
+	    out_requested: !in_req,
+	    in_requested: in_req
+	}
+    };
+
+    ws.send(JSON.stringify(req));
 }
 
 function create_ws(addr) {
@@ -372,40 +603,14 @@ async function create_websocket() {
 	return [];
     }
 
+    query_capabilities(out_ws, false);
+    query_capabilities(in_ws, true);
+    
     out_ws.in_ws = in_ws;
     button.innerHTML = "Disconnect";
     button.disabled = false;
     
     return [ in_ws, out_ws ];
-}
-
-function setup_radio_cookies(name) {
-    let cookie = get_cookie(name);
-    let radio = document.getElementsByName(name);
-    let found = false;
-    radio.forEach(e => {
-	if(!found) {
-	    found = cookie === e.value;
-	    e.checked = found;
-	} else {
-	    e.checked = false;
-	}
-	e.addEventListener('change', ev => {
-	    set_cookie(name, ev.target.value, EXP_COOKIES);
-	});
-    });
-    if(!found) radio[0].checked = true;
-}
-
-function setup_cookies() {
-    let in_addr = get_cookie("in_addr");
-    document.getElementById('qclient').value = in_addr;
-    let out_addr = get_cookie("out_addr");
-    document.getElementById('qserver').value = out_addr;
-
-    setup_radio_cookies("cc");
-    setup_radio_cookies("datagrams");
-    setup_radio_cookies("filetransfer");
 }
 
 (function() {
@@ -414,9 +619,9 @@ function setup_cookies() {
     let in_ws = undefined, out_ws = undefined;
 
     // Setup the ui
-    let callButton = document.querySelector('button');
+    let callButton = document.getElementById('call');
     let linkButton = document.getElementById('link');
-    let connectButton = document.getElementById('connect');
+    let connectButton   = document.getElementById('connect');
     let resetLinkButton = document.getElementById('resetlink');
 
     // Start/stop the experiment when start button is clicked
@@ -448,7 +653,8 @@ function setup_cookies() {
 	    transId: LINK_REQUEST,
 	    data: {
 		bitrate: parseInt(bitrate.value, 10),
-		delay: parseInt(delay.value, 10)
+		delay: parseInt(delay.value, 10),
+		loss: 300 // 10th percent
 	    }
 	};
 

@@ -3,7 +3,8 @@ let stats = [];
 let stats_send = [];
 
 // LINK
-const LINK_LIMIT = [[60, 1000, 1], [30, 500, 1], [30, 1000, 1]]; // [time to wait, link cap, delay]
+const LOSS = 0;
+const LINK_LIMIT = [[60, 1000, 1, LOSS], [30, 500, 1, LOSS], [30, 1000, 1, LOSS]]; // [time to wait, link cap, delay]
 // const LINK_LIMIT = [[2, 1000, 1], [2, 500, 1], [2, 1000, 1]]; // [time to wait, link cap, delay]
 
 let link_chart = [];
@@ -73,6 +74,7 @@ async function get_remote_stats(pc, track, count) {
 	    var height = track.height || remote.videoHeight;//result.stat("googFrameHeightReceived");
 	    var fps =  (result.framesDecoded-prevFrames)*1000/delta;
 	    var kbps = (result.bytesReceived-prevBytes)*8/delta;
+	    if(kbps < 0) kbps = 0;
 	    //Store last values
 	    prevFrames = result.framesDecoded;
 	    prevBytes  = result.bytesReceived;
@@ -159,13 +161,16 @@ function display_chart() {
 
 function set_link_interval(ws, current, onfinish) {
     if(current >= LINK_LIMIT.length) {
-	onfinish();
+	onfinish(stats, link_chart);
+	link_chart = [];
+	stats = [];
     } else {
 	current_link = current;
 	let link = LINK_LIMIT[current];
 	let time = link[0];
 	let bitrate = link[1];
 	let delay = link[2];
+	let loss = link[3];
 
 	if(bitrate === null) reset_link(ws);
 	else {
@@ -175,7 +180,7 @@ function set_link_interval(ws, current, onfinish) {
 		data: {
 		    bitrate: bitrate,
 		    delay: delay,
-		    loss: 100
+		    loss: loss
 		}
 	    };
 

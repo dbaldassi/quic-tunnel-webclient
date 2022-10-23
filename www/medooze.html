@@ -222,119 +222,6 @@
     
   </head>
   <body>
-    <div class="container-radio">
-      <fieldset>
-	<legend>Websocket settings : </legend>
-
-	<div>
-	  <label for="qclient">Quic client address: </label>
-	  <input type="text" id="qclient" name="qclient" value="">
-	</div>
-
-	<div>
-	  <label for="qserver">Quic server address: </label>
-	  <input type="text" id="qserver" name="qserver" value="">
-	</div>
-
-	<button type="button" id="connect">Connect</button>
-      </fieldset>
-    </div>
-    
-    <div class="container-video">
-      <button type="button" id="call">Start</button>
-      <video id="remote"></video>
-    </div>
-    
-    <div class="container-radio">
-      <fieldset>
-	<legend>Select a Congestion controller:</legend>
-
-	<div>
-	  <input type="radio" id="bbr" name="cc" value="bbr"
-		 checked>
-	  <label for="bbr">BBR</label>
-	</div>
-
-	<div>
-	  <input type="radio" id="copa" name="cc" value="copa">
-	  <label for="copa">COPA</label>
-	</div>
-
-	<div>
-	  <input type="radio" id="newreno" name="cc" value="newreno">
-	  <label for="newreno">NewReno</label>
-	</div>
-
-	<div>
-	  <input type="radio" id="cubic" name="cc" value="cubic">
-	  <label for="cubic">Cubic</label>
-	</div>
-
-	<div>
-	  <input type="radio" id="none" name="cc" value="none">
-	  <label for="none">None</label>
-	</div>
-      </fieldset>
-    </div>
-
-    <div class="container-radio">
-      <fieldset>
-	<legend>Datagrams or stream :</legend>
-
-	<div>
-	  <input type="radio" id="datagram" name="datagrams" value="datagram"
-		 checked>
-	  <label for="bbr">datagram</label>
-	</div>
-
-	<div>
-	  <input type="radio" id="stream" name="datagrams" value="stream">
-	  <label for="stream">stream</label>
-	</div>
-      </fieldset>
-    </div>
-
-    <div class="container-video"></div>
-    <div class="container-video"></div>
-    <div class="container-video"></div>
-    
-    <div class="container-radio">
-      <fieldset>
-	<legend>link settings : </legend>
-
-	<div>
-	  <label for="bitrate">Bitrate: </label>
-	  <input type="text" id="bitrate" name="bitrate" value="">
-	</div>
-
-	<div>
-	  <label for="delay">Delay: </label>
-	  <input type="text" id="delay" name="delay" value="">
-	</div>
-
-	<button type="button" id="link">Set link</button>
-	<button type="button" id="resetlink">Reset link</button>
-      </fieldset>
-    </div>
-
-    <div class="container-radio">
-      <fieldset>
-	<legend>Concurrent file transfer :</legend>
-	<div>
-	  <input type="radio" id="nofiletransfer" name="filetransfer" value="None" checked>
-	  <label for="None">None</label>
-	</div>
-	<div>
-	  <input type="radio" id="externalfiletrasnfer" name="filetransfer" value="external">
-	  <label for="external">external</label>
-	</div>
-	<div>
-	  <input type="radio" id="multiplexedfiletrasnfer" name="filetransfer" value="multiplexed">
-	  <label for="multiplexed">multiplexed</label>
-	</div>
-      </fieldset>
-    </div>
-    
     <div class="gaugeChartContainer">
       <canvas id="r_s_w" class="gaugeChart" width="192" height="135" style="width: 160px; height: 100px;"></canvas>
       <span id="s_s_w" class="gaugeChartLabel">- -</span>
@@ -366,8 +253,105 @@
       <span class="gaugeChartMin">0</span>
       <span class="gaugeChartMax">1024</span>
     </div>
-</div>
-</body>
+    
+    <div class="container-video">
+      <video id="remote"></video>
+    </div>
+
+    <!-- <div class="container-radio"></div> -->
+    <!-- <div class="container-radio"></div> -->
+    <!-- <div class="container-radio"></div> -->
+    <!-- <div class="container-radio"></div> -->
+    
+    <div class="container-radio">
+      <fieldset>
+	<legend>Websocket settings : </legend>
+
+	<div>
+	  <label for="qclient">Quic client address: </label>
+	  <input type="text" id="qclient" name="qclient" value="">
+	</div>
+
+	<div>
+	  <label for="qserver">Quic server address: </label>
+	  <input type="text" id="qserver" name="qserver" value="">
+	</div>
+
+	<button type="button" id="connect">Connect</button>
+      </fieldset>
+    </div>
+    
+    <div class="container-radio">
+      <fieldset>
+	<legend>Quic Tunnel addr settings : </legend>
+
+	<div>
+	  <label for="qhost">Quic server addr: </label>
+	  <input type="text" id="qhost" name="qhost" value="">
+	</div>
+
+	<div>
+	  <label for="qserver">Quic server port: </label>
+	  <input type="text" id="qport" name="qport" value="">
+	</div>
+
+	<div>
+	  <label for="medooze addr">Medooze server addr: </label>
+	  <input type="text" id="medoozeaddr" name="medoozeaddr" value="">
+	</div>
+
+	<div>
+	  <label for="medooze port">Medooze server HTTPs/WebSocket port: </label>
+	  <input type="text" id="medoozeport" name="medoozeport" value="">
+	</div>	
+	
+	<button type="button" id="call">Start</button>
+	
+      </fieldset>
+    </div>
+
+    <div class="container-radio">
+      <fieldset>
+	<legend>link settings : </legend>
+
+	<div>
+	  <label for="bitrate">Bitrate: </label>
+	  <input type="text" id="bitrate" name="bitrate" value="">
+	</div>
+
+	<div>
+	  <label for="delay">Delay: </label>
+	  <input type="text" id="delay" name="delay" value="">
+	</div>
+
+	<div>
+	  <label for="loss">Link (in %): </label>
+	  <input type="text" id="loss" name="loss" value="">
+	</div>
+
+	<button type="button" id="link">Set link</button>
+	<button type="button" id="resetlink">Reset link</button>
+      </fieldset>
+    </div>
+
+    <div class="container-radio">
+      <fieldset>
+	<legend>Concurrent file transfer :</legend>
+	<div>
+	  <input type="radio" id="nofiletransfer" name="filetransfer" value="None" checked>
+	  <label for="None">None</label>
+	</div>
+	<div>
+	  <input type="radio" id="externalfiletrasnfer" name="filetransfer" value="external">
+	  <label for="external">external</label>
+	</div>
+	<div>
+	  <input type="radio" id="multiplexedfiletrasnfer" name="filetransfer" value="multiplexed">
+	  <label for="multiplexed">multiplexed</label>
+	</div>
+      </fieldset>
+    </div> 
+  </body>
 
 </html>	
 

@@ -22,3 +22,38 @@ function get_cookie(name) {
     }
     return "";
 }
+
+function setup_radio_cookies(name) {
+    let cookie = get_cookie(name);
+    let radio = document.getElementsByName(name);
+    let found = false;
+    radio.forEach(e => {
+	if(!found) {
+	    found = cookie === e.value;
+	    e.checked = found;
+	} else {
+	    e.checked = false;
+	}
+	e.addEventListener('change', ev => {
+	    set_cookie(name, ev.target.value, EXP_COOKIES);
+	});
+    });
+    if(!found) radio[0].checked = true;
+}
+
+function setup_cookies() {
+    let in_addr = get_cookie("in_addr");
+    document.getElementById('qclient').value = in_addr;
+    let out_addr = get_cookie("out_addr");
+    document.getElementById('qserver').value = out_addr;
+    let qhost = get_cookie("qhost");
+    document.getElementById('qhost').value = qhost;
+    let qport = get_cookie("qport");
+    document.getElementById('qport').value = qport;
+    let medoozeurl = get_cookie("medoozeaddr");
+    document.getElementById('medoozeaddr').value = medoozeurl;
+    let medoozeport = get_cookie("medoozeport");
+    document.getElementById('medoozeport').value = medoozeport;
+
+    setup_radio_cookies("filetransfer");
+}
