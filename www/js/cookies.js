@@ -26,6 +26,9 @@ function get_cookie(name) {
 function setup_radio_cookies(name) {
     let cookie = get_cookie(name);
     let radio = document.getElementsByName(name);
+
+    if(!radio || radio.length === 0) return;
+    
     let found = false;
     radio.forEach(e => {
 	if(!found) {
@@ -54,6 +57,10 @@ function setup_cookies() {
     document.getElementById('medoozeaddr').value = medoozeurl;
     let medoozeport = get_cookie("medoozeport");
     document.getElementById('medoozeport').value = medoozeport;
+    let medoozeprobing = get_cookie("medoozeprobing");
+    document.getElementById('medoozeprobing').value = medoozeprobing;
+    let medoozeprobingenable = get_cookie("medoozeprobingenable");
+    document.getElementById('medoozeprobingenable').checked = medoozeprobingenable === 'true'; // js ...
 
     setup_radio_cookies("filetransfer");
 }

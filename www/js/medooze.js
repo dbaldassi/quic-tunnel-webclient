@@ -46,8 +46,13 @@ function stop_peerconnection() {
 function start_peerconnection_medooze() {
     // Create websocket with medooze with sub-protocol quic-relay-loopback
     let url = document.getElementById('medoozeaddr').value;
-    let port = document.getElementById('medoozeport').value;    
+    let port = document.getElementById('medoozeport').value;
+    let probing = document.getElementById('medoozeprobing').value;
+    let constant_probing = probing;
+    let probing_enabled = document.getElementById('medoozeprobingenable').checked;
     const medooze_url = "wss://" + url + ":" + port;
+
+    if(!probing_enabled) probing = 0;
 
     medooze_ws = new WebSocket(medooze_url, "quic-relay-loopback");
 
@@ -100,7 +105,7 @@ function start_peerconnection_medooze() {
 	await local_pc.setLocalDescription(offer);
 
 	// Send the SDP to medooze
-	medooze_ws.send(JSON.stringify({ cmd: "view", offer: offer.sdp }));
+	medooze_ws.send(JSON.stringify({ cmd: "view", offer: offer.sdp, probing: probing, constant_probing: constant_probing }));
     };
 
     // Stop the peerconnection if the websocket is closed
@@ -123,7 +128,7 @@ function start_peerconnection_medooze() {
 	}
 	if(ans.url) {
 	    // URL for csv dump file. Will be open in the BWE stat viewer
-	    medooze_csv_url = "https://" + medooze_url + ans.url;
+	    medooze_csv_url = "https://" + url + ":" + port + ans.url;
 	}
     };
 }
@@ -268,6 +273,8 @@ function start(in_ws, out_ws) {
     
     let url = document.getElementById('medoozeaddr').value;
     let port = document.getElementById('medoozeport').value;
+    let probing = document.getElementById('medoozeprobing').value;
+    let probing_enabled = document.getElementById('medoozeprobingenable').checked;
     let host = document.getElementById('qhost').value;
     let qport = document.getElementById('qport').value;
     
@@ -277,6 +284,9 @@ function start(in_ws, out_ws) {
     set_cookie("qport", qport, EXP_COOKIES);
     set_cookie("medoozeaddr", url, EXP_COOKIES);
     set_cookie("medoozeport", port, EXP_COOKIES);
+    set_cookie("medoozeprobing", probing, EXP_COOKIES);
+    console.log(probing_enabled);
+    set_cookie("medoozeprobingenable", probing_enabled, EXP_COOKIES);
 
     // get which port medooze is listening to for RTP
     let ws = new WebSocket(medooze_url, "port");
@@ -306,16 +316,18 @@ function stop(in_ws, out_ws) {
     const stream = getRemoteVideo();
     stream.srcObject = null;
     
-    // stop the peerconnection
-    stop_peerconnection();
+    // if the ws is still active, close it
+    if(medooze_ws) {	
+	medooze_ws.close();
+    }
     
     // build the stop client request for graceful shutdown
     let request = {
-        cmd: "stopclient",
-        transId: STOP_REQUEST,
-        data: {
-            id: clientSessionId
-        }
+	cmd: "stopclient",
+	transId: STOP_REQUEST,
+	data: {
+	    id: clientSessionId
+	}
     };
 
     // Send the stop command to the client
@@ -329,11 +341,6 @@ function stop(in_ws, out_ws) {
     // Send stop command to the quic server
     out_ws.send(JSON.stringify(request));
 
-    // if the ws is still active, close it
-    if(medooze_ws) {
-	medooze_ws.close();
-	// medooze_ws = null;
-    }
     // open the bwe stats viewer website with the csv dump file
     if(medooze_csv_url) {
 	const bweUrl = "https://medooze.github.io/bwe-stats-viewer/?url=" + encodeURIComponent(medooze_csv_url);
@@ -388,7 +395,7 @@ function show_impl_capabilities(caps) {
     // Display datagram support
     let container_dgram = create_radio_container("dgram_container", "Datagrams or stream :");
     if(caps.datagrams) create_radio_div(container_dgram.childNodes[0], "datagrams", "datagram");
-    create_radio_div(container_dgram.childNodes[0], "datagrams", "stream");
+    if(caps.streams) create_radio_div(container_dgram.childNodes[0], "datagrams", "stream");
     document.body.appendChild(container_dgram);
 
     setup_radio_cookies("cc");
@@ -449,7 +456,7 @@ function handle_ws_message(ws, msg) {
 	    // Start the quic tunnel client
 	    send_start_client(ws.in_ws);
 	    // Start a timeout for tc constraint
-	    set_link_interval(ws, 0, (bitrate_stats, link_stats) => {
+	    set_link_interval(ws, 0, (stats) => {
 		// lambda called when every link step is complete
 		console.log("finito!");
 		// remove all constraints
@@ -462,8 +469,7 @@ function handle_ws_message(ws, msg) {
 		    cmd: "uploadstats",
 		    transId: UPLOAD_REQUEST,
 		    data: {
-			bitrate: bitrate_stats,
-			link: link_stats
+			stats: stats,
 		    }
 		};
 		console.log(req);
@@ -475,20 +481,6 @@ function handle_ws_message(ws, msg) {
 	    // opening qvis visualization for server side
 	    qvis_url = response.data.url;
 	    window.open(qvis_url, '_blank').focus();
-	}
-	else if(response.transId === CAPABILITIES_IN_REQUEST) {
-	    show_capabilities(response.data.in_impls);
-	}
-	else if(response.transId === CAPABILITIES_OUT_REQUEST) {
-	    // console.log(response);
-	    // TODO: differentiate client and server caps in the UI
-	}
-	else if(response.transId === UPLOAD_REQUEST) {
-	    console.log("RECEIVE UPLOAD RESPONSE");
-
-	    // if(qvis_url) {
-	    // 	const qvis_tmp = qvis_url.split('"');
-	    // }
 
 	    // Get the quic implementation
 	    let impl_radio = document.getElementsByName("impl");
@@ -542,9 +534,21 @@ function handle_ws_message(ws, msg) {
 	    console.log(req);
 	    ws.send(JSON.stringify(req));
 	}
+	else if(response.transId === CAPABILITIES_IN_REQUEST) {
+	    show_capabilities(response.data.in_impls);
+	}
+	else if(response.transId === CAPABILITIES_OUT_REQUEST) {
+	    // console.log(response);
+	    // TODO: differentiate client and server caps in the UI
+	}
+	else if(response.transId === UPLOAD_REQUEST) {
+	    console.log("RECEIVE UPLOAD RESPONSE");
+	}
 	else if(response.transId === GETSTATS_REQUEST) {
 	    console.log("GETSTATS RESP");
+	    console.log(response.data);
 	    window.open(response.data.url, '_blank').focus();
+	    window.open(response.data.tcp_url, '_blank').focus();
 	}
     }
 }

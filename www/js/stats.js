@@ -4,13 +4,21 @@ let stats_send = [];
 
 // LINK
 const LOSS = 0;
-const LINK_LIMIT = [[60, 1000, 1, LOSS], [30, 500, 1, LOSS], [30, 1000, 1, LOSS]]; // [time to wait, link cap, delay]
+const DELAY = 50;
+const LINK_LIMIT = [// [60, 1000, 1, 0], [30, 500, 1, 0], [30, 1000, 1, 0], [15, 2000, 1, 0],
+		    // [30, 1000, 1, 0], [30, 1000, 1, 2], [30, 1000, 1, 4], [30, 1000, 1, 9], [30, 1000, 1, 15],
+		    // [30, 500, 1, 0], [30, 500, 1, 2], [30, 500, 1, 4], [30, 500, 1, 9], [30, 500, 1, 15],
+		    // [30, 2500, DELAY, 0], [30, 2500, DELAY, 5], [30, 2500, DELAY, 10], [30, 2500, DELAY, 20], [30, 2500, DELAY, 30]
+		    [60, 2500, DELAY, LOSS]
+		   ]; // [time to wait, link cap, delay]
 // const LINK_LIMIT = [[2, 1000, 1], [2, 500, 1], [2, 1000, 1]]; // [time to wait, link cap, delay]
 
 let link_chart = [];
 
 var prev = 0, prevFrames = 0, prevBytes = 0;
 var prev1 = 0, prevFrames1 = 0, prevBytes1 = 0;
+var frameDecoded = 0, frameDropped = 0, keyFrameDecoded = 0, frameRendered = 0;
+
 let current_link = 0;
 
 var opts = {
@@ -84,6 +92,7 @@ async function get_remote_stats(pc, track, count) {
 
 	    for (var i=0;i<targets.length;++i)
 		gauges[i].animationSpeed = 10000000; // set animation speed (32 is default value)
+	    
 	    gauges[0].set(width);
 	    gauges[1].set(height);
 	    gauges[2].set(Math.min(Math.floor(fps)   ,30));
@@ -93,7 +102,17 @@ async function get_remote_stats(pc, track, count) {
 	    texts[2].innerText = Math.floor(fps);
 	    texts[3].innerText =  Math.floor(kbps);
 
-	    stats.push({x: count, y: Math.floor(kbps)});
+	    stats.push({
+		x: count,
+		bitrate: Math.floor(kbps),
+		fps: Math.floor(fps),
+		link: LINK_LIMIT[current_link][1],
+		frameDecoded: result.framesDecoded,
+		frameDropped: result.framesDropped,
+		keyFrameDecoded: result.keyFramesDecoded,
+		frameRendered: (result.framesRendered == undefined) ? 0 : result.framesRendered
+	    });
+	    
 	    link_chart.push({x: count, y: LINK_LIMIT[current_link][1]});
 	    ++count;
 	}
@@ -161,7 +180,8 @@ function display_chart() {
 
 function set_link_interval(ws, current, onfinish) {
     if(current >= LINK_LIMIT.length) {
-	onfinish(stats, link_chart);
+	console.log(stats);
+	onfinish(stats);
 	link_chart = [];
 	stats = [];
     } else {
