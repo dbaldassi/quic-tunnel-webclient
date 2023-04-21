@@ -31,6 +31,9 @@ let medooze_csv_url = null;
 let medooze_addr = null;
 let medooze_port = null;
 
+let client_stopped = false;
+let server_stopped = false;
+
 function getRemoteVideo() {
     // return the HTML video element to play the received stream
     return document.getElementById('remote');
@@ -303,19 +306,30 @@ function stop_ws(in_ws, out_ws) {
     if(out_ws) out_ws.close();
 }
 
+function update_stop_button()
+{
+    let callButton = document.getElementById('call');
+    
+    callButton.disabled = !(client_stopped && server_stopped);
+
+    if(!callButton.disabled) {
+	callButton.innerHTML = "Start";
+	client_stopped = false;
+	server_stopped = false;
+    }
+}
+
 function stop(in_ws, out_ws) {
     console.log("stoppping");
 
     // update ui button
-    let callButton = document.getElementById('call');
-    if(callButton.innerHTML === "Start") return; // Already stopped
-    
-    callButton.innerHTML = "Start";
+    update_stop_button();
 
     // remove stream
     const stream = getRemoteVideo();
     stream.srcObject = null;
-    
+
+    stop_peerconnection();
     // if the ws is still active, close it
     if(medooze_ws) {	
 	medooze_ws.close();
@@ -445,6 +459,11 @@ function handle_ws_message(ws, msg) {
 	}
 	// response to a stop client request with the qvis url
 	else if(response.transId === STOP_REQUEST) {
+	    console.log("client stopped");
+
+	    client_stopped = true;
+	    update_stop_button();
+	    
 	    // opening qvis visualiztion for client side
 	    // window.open(response.data.url, '_blank').focus();
 	}
@@ -478,6 +497,9 @@ function handle_ws_message(ws, msg) {
 	    });
 	}
 	else if(response.transId === STOP_SERVER_REQUEST) {
+	    server_stopped = true;
+	    update_stop_button();
+
 	    // opening qvis visualization for server side
 	    qvis_url = response.data.url;
 	    window.open(qvis_url, '_blank').focus();
