@@ -356,11 +356,11 @@ function stop(in_ws, out_ws) {
     out_ws.send(JSON.stringify(request));
 
     // open the bwe stats viewer website with the csv dump file
-    if(medooze_csv_url) {
+    /*if(medooze_csv_url) {
 	const bweUrl = "https://medooze.github.io/bwe-stats-viewer/?url=" + encodeURIComponent(medooze_csv_url);
 	window.open(bweUrl, '_blank').focus();
 	medooze_csv_url = null;
-    }
+    }*/
 }
 
 function create_radio_container(id, legend_name) {
@@ -438,8 +438,6 @@ function show_capabilities(caps) {
     });    
 }
 
-let qvis_url = null;
-
 function handle_ws_message(ws, msg) {
     // get json from raw message
     let response = JSON.parse(msg.data);
@@ -469,7 +467,6 @@ function handle_ws_message(ws, msg) {
 	}
 	// response to a start server request
 	else if(response.transId === START_SERVER_REQUEST) {
-	    qvis_url = null;
 	    // keep the session id to later close the connection
 	    serverSessionId = response.data.id;
 	    // Start the quic tunnel client
@@ -499,10 +496,6 @@ function handle_ws_message(ws, msg) {
 	else if(response.transId === STOP_SERVER_REQUEST) {
 	    server_stopped = true;
 	    update_stop_button();
-
-	    // opening qvis visualization for server side
-	    qvis_url = response.data.url;
-	    window.open(qvis_url, '_blank').focus();
 
 	    // Get the quic implementation
 	    let impl_radio = document.getElementsByName("impl");
@@ -549,7 +542,8 @@ function handle_ws_message(ws, msg) {
 		transId: GETSTATS_REQUEST,
 		data: {
 		    exp_name: name,
-		    // qvis_file: qvis_tmp[1]
+		    transport: ((impl == "tcp" || impl == "udp") ? impl : "quic"),
+		    medooze_dump_url: medooze_csv_url
 		}
 	    };
 
@@ -568,9 +562,12 @@ function handle_ws_message(ws, msg) {
 	}
 	else if(response.transId === GETSTATS_REQUEST) {
 	    console.log("GETSTATS RESP");
-	    console.log(response.data);
+
 	    window.open(response.data.url, '_blank').focus();
-	    window.open(response.data.tcp_url, '_blank').focus();
+	    
+	    if(response.data.tcp_url) window.open(response.data.tcp_url, '_blank').focus();
+	    if(response.data.qvis_url) window.open(response.data.qvis_url, '_blank').focus();
+	    if(response.data.medooze_url) window.open(response.data.medooze_url, '_blank').focus();
 	}
     }
 }
