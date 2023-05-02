@@ -1,3 +1,4 @@
+const EXP_COOKIES = 84; // 84 days
 
 function set_cookie(name, value, exp_days) {
     const d = new Date();

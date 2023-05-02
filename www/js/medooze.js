@@ -14,7 +14,6 @@ const GETSTATS_REQUEST = 9;
 // time
 const SEC = 1000;
 const MIN = 60 * SEC;
-const EXP_COOKIES = 84; // 84 days
 
 // Quic session id, returned when starting a quic endpoint
 let clientSessionId = 0;
@@ -288,7 +287,6 @@ function start(in_ws, out_ws) {
     set_cookie("medoozeaddr", url, EXP_COOKIES);
     set_cookie("medoozeport", port, EXP_COOKIES);
     set_cookie("medoozeprobing", probing, EXP_COOKIES);
-    console.log(probing_enabled);
     set_cookie("medoozeprobingenable", probing_enabled, EXP_COOKIES);
 
     // get which port medooze is listening to for RTP
