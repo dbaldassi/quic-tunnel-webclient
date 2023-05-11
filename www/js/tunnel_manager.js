@@ -42,6 +42,8 @@ class TunnelManager {
 	this.server_stopped = true;
 	
 	this.caps = null;
+
+	this.show_stats = true;
     }
 
     connect() {
@@ -140,6 +142,8 @@ class TunnelManager {
 
 	    }
 	    else if(response.transId === GETSTATS_REQUEST) {
+		if(!this.show_stats) return;
+		
 		window.open(response.data.url, '_blank').focus();
 	    
 		if(response.data.tcp_url) window.open(response.data.tcp_url, '_blank').focus();
@@ -180,6 +184,12 @@ class TunnelManager {
 	}
 
 	const current = constraints.shift();
+	
+	if(current === null) {
+	    this.stop();
+	    return;
+	}
+	
 	this.set_link(current[1], current[2], current[3]);
 	this.pc_manager.link = current[1];
 

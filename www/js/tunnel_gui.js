@@ -52,6 +52,8 @@ function show_impl_capabilities(caps) {
 }
 
 function setup_capabilities(tunnel_mgr) {
+    console.log(tunnel_mgr.caps, tunnel_mgr.caps.length);
+    
     // Display implementations    
     let container = create_radio_container("impl_container", "Quic implementation : ");
     tunnel_mgr.caps.forEach(e => create_radio_div(container.childNodes[0], "impl", e.impl));
@@ -89,7 +91,10 @@ function connect(tunnel_mgr) {
 function setup_connect(tunnel_mgr) {
     let button = document.getElementById('connect');
 
-    tunnel_mgr.on_capabilities = () => setup_capabilities(tunnel_mgr);
+    tunnel_mgr.on_capabilities = () => {
+	setup_capabilities(tunnel_mgr);
+	setup_all(tunnel_mgr);
+    };
     
     // Start/stop the experiment when start button is clicked
     button.onclick = (e) => {	
@@ -126,7 +131,7 @@ function get_radio_cap(name) {
     return cap;
 }
 
-function start(tunnel_mgr) {
+function setup_network_info(tunnel_mgr) {
     tunnel_mgr.medooze_manager.url = document.getElementById('medoozeaddr').value;
     tunnel_mgr.medooze_manager.port = parseInt(document.getElementById('medoozeport').value, 10);
     tunnel_mgr.medooze_manager.probing_bitrate = parseInt(document.getElementById('medoozeprobing').value, 10);
@@ -135,17 +140,21 @@ function start(tunnel_mgr) {
     tunnel_mgr.quic_host = document.getElementById('qhost').value;
     tunnel_mgr.quic_port = parseInt(document.getElementById('qport').value, 10);
 
-    tunnel_mgr.cc = get_radio_cap("cc");
-    tunnel_mgr.impl = get_radio_cap("impl");
-    tunnel_mgr.datagrams = get_radio_cap("datagrams") === "datagram";
-    tunnel_mgr.external_file_transfer = get_radio_cap("filetransfer") === "external";
-    
     set_cookie("qhost", tunnel_mgr.quic_host, EXP_COOKIES);
     set_cookie("qport", tunnel_mgr.quic_port, EXP_COOKIES);
     set_cookie("medoozeaddr", tunnel_mgr.medooze_manager.url, EXP_COOKIES);
     set_cookie("medoozeport", tunnel_mgr.medooze_manager.port, EXP_COOKIES);
     set_cookie("medoozeprobing", tunnel_mgr.medooze_manager.probing_bitrate, EXP_COOKIES);
     set_cookie("medoozeprobingenable", tunnel_mgr.medooze_manager.probing, EXP_COOKIES);
+}
+
+function start(tunnel_mgr) {
+    setup_network_info(tunnel_mgr);
+    
+    tunnel_mgr.cc = get_radio_cap("cc");
+    tunnel_mgr.impl = get_radio_cap("impl");
+    tunnel_mgr.datagrams = get_radio_cap("datagrams") === "datagram";
+    tunnel_mgr.external_file_transfer = get_radio_cap("filetransfer") === "external";
 
     tunnel_mgr.pc_manager.ontrack = (stream) => {
 	const player = document.getElementById('remote');
@@ -191,6 +200,124 @@ function setup_call(tunnel_mgr) {
 	    button.disabled = true;	    
 	    tunnel_mgr.stop();
 	}
+    };
+}
+
+
+class ConstraintIterator {
+
+    constructor(tunnel_mgr, repeat) {
+	this.tunnel_mgr = tunnel_mgr;
+	this.repeat = repeat;
+
+	this.current_rep = 0;
+	this.impl = 0;
+	this.cc = 0;
+
+	this.tunnel_mgr.external_file_transfer = false;	
+
+	this.init_impl();
+    }
+
+    init_impl() {
+	this.dgram = this.tunnel_mgr.caps[this.impl].datagrams;
+	this.dgram_switch = this.tunnel_mgr.caps[this.impl].datagrams && this.tunnel_mgr.caps[this.impl].streams;
+	
+	this.tunnel_mgr.impl = this.tunnel_mgr.caps[this.impl].impl;
+	this.tunnel_mgr.cc = this.tunnel_mgr.caps[this.impl].cc[this.cc];
+	this.tunnel_mgr.datagrams = this.dgram;
+    }
+    
+    next() {
+	this.current_rep += 1;
+	if(this.current_rep < this.repeat) return true;
+
+	this.current_rep = 0;
+	this.cc += 1;
+
+	if(this.cc < this.tunnel_mgr.caps[this.impl].cc.length) {
+	    this.tunnel_mgr.cc = this.tunnel_mgr.caps[this.impl].cc[this.cc];
+	    return true;
+	}
+
+	this.cc = 0;
+	this.tunnel_mgr.cc = this.tunnel_mgr.caps[this.impl].cc[this.cc];
+
+	if(this.dgram_switch) {
+	    this.dgram = !this.dgram;
+	    this.tunnel_mgr.datagrams = this.dgram;
+	    
+	    if(!this.dgram) return true;
+	}
+	
+	this.impl += 1;
+	if(this.impl < this.tunnel_mgr.caps.length) {
+	    this.init_impl();
+	    // todo: re-factor this
+	    if(this.tunnel_mgr.impl === "tcp") {
+		this.impl += 1;
+		if(this.impl < this.tunnel_mgr.caps.length) {
+		    this.init_impl();
+		    return true;
+		}
+
+		return false;
+	    }
+	    return true;
+	}
+	
+	//the end
+	return false;
+    }
+};
+
+function setup_all(tunnel_mgr) {
+    let button = document.getElementById('all');
+
+    let it = new ConstraintIterator(tunnel_mgr, 2);
+    /*tunnel_mgr.impl = "quicgo";
+    tunnel_mgr.cc = "newreno";
+    tunnel_mgr.datagrams = false;*/
+
+    const LINK_LIMIT = [ [60, 2500, 1, 0], null, [60, 2500, 25, 0], null, [60, 2500, 50, 0], null, [60, 2500, 100, 0], null, [60, 2500, 400, 0], null,
+			 [60, 2500, 1, 1], null, [60, 2500, 25, 1], null, [60, 2500, 50, 1], null, [60, 2500, 100, 1], null, [60, 2500, 400, 0], null,
+			 [60, 2500, 1, 5], null, [60, 2500, 25, 5], null, [60, 2500, 50, 5], null, [60, 2500, 100, 5], null, [60, 2500, 400, 5], null,
+			 [60, 2500, 1, 10], null, [60, 2500, 25, 10], null, [60, 2500, 50, 10], null, [60, 2500, 100, 10], null, [60, 2500, 400, 10]];
+
+    let constraints = LINK_LIMIT.slice();
+
+    tunnel_mgr.on_start = () => {
+	console.log("start : ", tunnel_mgr.impl, tunnel_mgr.cc, tunnel_mgr.datagrams);
+
+	tunnel_mgr.run(constraints);
+    };
+    
+    tunnel_mgr.on_stop = () => {
+	console.log("stop: ", constraints.length);
+	
+	if(constraints.length === 0) {
+	    constraints = LINK_LIMIT.slice();
+	    if(!it.next()) return;
+	    // tunnel_mgr.datagrams = !tunnel_mgr.datagrams;
+	    // if(!tunnel_mgr.datagrams) return;
+	}
+
+	tunnel_mgr.start(); // restart
+    };
+    
+    button.onclick = (e) => {
+	setup_network_info(tunnel_mgr);
+	
+	tunnel_mgr.show_stats = false;
+	tunnel_mgr.pc_manager.ontrack = (stream) => {
+	    const player = document.getElementById('remote');
+	    player.streamId =  stream.id;
+	    player.srcObject = stream;
+	    player.autoplay = true;
+	    player.playsInline = true;
+	};
+	
+	tunnel_mgr.start();
     };
 }
 
