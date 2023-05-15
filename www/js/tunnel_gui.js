@@ -227,6 +227,18 @@ class ConstraintIterator {
 	this.tunnel_mgr.cc = this.tunnel_mgr.caps[this.impl].cc[this.cc];
 	this.tunnel_mgr.datagrams = this.dgram;
     }
+
+    num() {
+	let sum = this.tunnel_mgr.caps.length;
+
+	for(let i = 0; i < this.tunnel_mgr.caps.length; i++) {
+	    sum += this.tunnel_mgr.caps[i].cc.length;
+	    sum += (this.tunnel_mgr.caps[i].datagrams ? 1 : 0);
+	    sum += (this.tunnel_mgr.caps[i].streams ? 1 : 0);
+	}
+
+	return sum;	
+    }
     
     next() {
 	this.current_rep += 1;
@@ -279,11 +291,33 @@ function setup_all(tunnel_mgr) {
     tunnel_mgr.cc = "newreno";
     tunnel_mgr.datagrams = false;*/
 
-    const LINK_LIMIT = [ [60, 2500, 1, 0], null, [60, 2500, 25, 0], null, [60, 2500, 50, 0], null, [60, 2500, 100, 0], null, [60, 2500, 400, 0], null,
+    /*const LINK_LIMIT = [ [60, 2500, 1, 0], null, [60, 2500, 25, 0], null, [60, 2500, 50, 0], null, [60, 2500, 100, 0], null, [60, 2500, 400, 0], null,
 			 [60, 2500, 1, 1], null, [60, 2500, 25, 1], null, [60, 2500, 50, 1], null, [60, 2500, 100, 1], null, [60, 2500, 400, 0], null,
 			 [60, 2500, 1, 5], null, [60, 2500, 25, 5], null, [60, 2500, 50, 5], null, [60, 2500, 100, 5], null, [60, 2500, 400, 5], null,
-			 [60, 2500, 1, 10], null, [60, 2500, 25, 10], null, [60, 2500, 50, 10], null, [60, 2500, 100, 10], null, [60, 2500, 400, 10]];
+			 [60, 2500, 1, 10], null, [60, 2500, 25, 10], null, [60, 2500, 50, 10], null, [60, 2500, 100, 10], null, [60, 2500, 400, 10]];*/
 
+    
+    const LINK_LIMIT = [ [60, 2500, 1, 0], null, [60, 2500, 25, 0], null, [60, 2500, 50, 0], null,
+			 [60, 2500, 1, 1], null, [60, 2500, 25, 1], null, [60, 2500, 50, 1], null,
+			 [60, 2500, 1, 5], null, [60, 2500, 25, 5], null, [60, 2500, 50, 5], null,
+			 [60, 2500, 1, 10], null, [60, 2500, 25, 10], null, [60, 2500, 50, 10]];
+
+    let sum = 0;
+    for(let elt of LINK_LIMIT) {
+	if(elt) sum += elt[0];
+    }
+
+    sum *= it.num();
+
+    let date = new Date(0);
+    date.setSeconds(sum);
+    let timestr = date.toISOString().substring(11, 19);
+    let endtime = new Date(0);
+
+    endtime.setTime(new Date().getTime() + date.getTime());
+    
+    console.log("Experiment time : ", timestr, "End at: ", endtime);
+    
     let constraints = LINK_LIMIT.slice();
 
     tunnel_mgr.on_start = () => {
@@ -306,6 +340,9 @@ function setup_all(tunnel_mgr) {
     };
     
     button.onclick = (e) => {
+	endtime.setTime(new Date().getTime() + date.getTime());
+	console.log("Experiment time : ", timestr, "End at: ", endtime);
+	
 	setup_network_info(tunnel_mgr);
 	
 	tunnel_mgr.show_stats = false;
