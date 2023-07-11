@@ -229,13 +229,14 @@ class ConstraintIterator {
     }
 
     num() {
-	let sum = this.tunnel_mgr.caps.length;
+	let sum = 0;
 
 	for(let i = 0; i < this.tunnel_mgr.caps.length; i++) {
-	    sum += this.tunnel_mgr.caps[i].cc.length;
-	    sum += (this.tunnel_mgr.caps[i].datagrams ? 1 : 0);
-	    sum += (this.tunnel_mgr.caps[i].streams ? 1 : 0);
+	    let mode = (this.tunnel_mgr.caps[i].datagrams ? 1 : 0) + (this.tunnel_mgr.caps[i].streams ? 1 : 0);
+	    sum += mode * this.tunnel_mgr.caps[i].cc.length;
 	}
+
+	sum *= this.repeat;
 
 	return sum;	
     }
@@ -297,10 +298,12 @@ function setup_all(tunnel_mgr) {
 			 [60, 2500, 1, 10], null, [60, 2500, 25, 10], null, [60, 2500, 50, 10], null, [60, 2500, 100, 10], null, [60, 2500, 400, 10]];*/
 
     
-    const LINK_LIMIT = [ [60, 2500, 1, 0], null, [60, 2500, 25, 0], null, [60, 2500, 50, 0], null,
-			 [60, 2500, 1, 1], null, [60, 2500, 25, 1], null, [60, 2500, 50, 1], null,
-			 [60, 2500, 1, 5], null, [60, 2500, 25, 5], null, [60, 2500, 50, 5], null,
-			 [60, 2500, 1, 10], null, [60, 2500, 25, 10], null, [60, 2500, 50, 10]];
+    /*const LINK_LIMIT = [ [60, 2500, 1, 0], null, [60, 2500, 25, 0], null, [60, 2500, 50, 0], null, [60, 2500, 100, 0], null,
+			 [60, 2500, 1, 1], null, [60, 2500, 25, 1], null, [60, 2500, 50, 1], null, [60, 2500, 100, 1], null,
+			 [60, 2500, 1, 5], null, [60, 2500, 25, 5], null, [60, 2500, 50, 5], null, [60, 2500, 100, 5], null,
+			 [60, 2500, 1, 10], null, [60, 2500, 25, 10], null, [60, 2500, 50, 10], null, [60, 2500, 100, 10]];*/
+
+    const LINK_LIMIT = [ [30, 1000, 0, 0], [30, 500, 0, 0], [15, 1000, 0, 0], [30, 2500, 0, 0], [15, 1000, 0, 0] ];
 
     let sum = 0;
     for(let elt of LINK_LIMIT) {
